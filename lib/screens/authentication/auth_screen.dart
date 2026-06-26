@@ -20,8 +20,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   bool _isLoginSelected = true;
 
   void _onFormSubmitted() {
-    // Navigate placeholder to Onboarding
-    context.push(AppRoutes.onboarding);
+    if (_isLoginSelected) {
+      context.go(AppRoutes.main);
+    } else {
+      context.push(AppRoutes.onboarding);
+    }
   }
 
   @override
@@ -169,6 +172,16 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   );
                   Future.delayed(const Duration(milliseconds: 600), _onFormSubmitted);
                 },
+              ),
+
+              const SizedBox(height: 16),
+              // Temporary Dev Button
+              TextButton(
+                onPressed: () => context.go(AppRoutes.main),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primaryDark,
+                ),
+                child: const Text('🚀 Skip to Dashboard (Dev)'),
               ),
 
               // Bottom Footer Section
