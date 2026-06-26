@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:healthify/routing/router.dart';
-import 'package:healthify/theme/theme.dart';
+import 'package:healthify/theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,9 +12,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Healthify',
+      title: 'Wellzy',
       debugShowCheckedModeBanner: false,
-      theme: NutriTheme.lightTheme,
+      theme: AppTheme.lightTheme,
       routerConfig: appRouter,
     );
   }
