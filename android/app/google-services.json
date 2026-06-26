@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642187573316",
+    "project_id": "wellzy-d6c45",
+    "storage_bucket": "wellzy-d6c45.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642187573316:android:2fd5745f5eb2baf90f2411",
+        "android_client_info": {
+          "package_name": "com.wellzy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfncZ97EFlsEf7Qx2rYxDKeLHhaEiDxAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
