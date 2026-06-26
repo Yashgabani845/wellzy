@@ -5,10 +5,12 @@ import 'package:healthify/theme/app_text_styles.dart';
 
 class SocialLoginButton extends StatefulWidget {
   final VoidCallback onPressed;
+  final bool isLoading;
 
   const SocialLoginButton({
     super.key,
     required this.onPressed,
+    this.isLoading = false,
   });
 
   @override
@@ -41,11 +43,13 @@ class _SocialLoginButtonState extends State<SocialLoginButton>
 
   @override
   Widget build(BuildContext context) {
+    final bool disableTap = widget.isLoading;
+
     return GestureDetector(
-      onTapDown: (_) => _controller.reverse(),
-      onTapUp: (_) => _controller.forward(),
-      onTapCancel: () => _controller.forward(),
-      onTap: widget.onPressed,
+      onTapDown: (_) => disableTap ? null : _controller.reverse(),
+      onTapUp: (_) => disableTap ? null : _controller.forward(),
+      onTapCancel: () => disableTap ? null : _controller.forward(),
+      onTap: disableTap ? null : widget.onPressed,
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
@@ -67,21 +71,41 @@ class _SocialLoginButtonState extends State<SocialLoginButton>
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CustomPaint(
-                size: const Size(22, 22),
-                painter: GoogleLogoPainter(),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Continue with Google',
-                style: AppTextStyles.button.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ],
+            children: widget.isLoading
+                ? [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Connecting to Google...',
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ]
+                : [
+                    CustomPaint(
+                      size: const Size(22, 22),
+                      painter: GoogleLogoPainter(),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Continue with Google',
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
           ),
         ),
       ),
