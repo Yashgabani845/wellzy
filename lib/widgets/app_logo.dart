@@ -19,9 +19,11 @@ class AppLogo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CustomPaint(
-          size: Size(size, size),
-          painter: LogoPainter(),
+        Image.asset(
+          'assets/images/logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
         ),
         if (showText) ...[
           const SizedBox(height: 12),
