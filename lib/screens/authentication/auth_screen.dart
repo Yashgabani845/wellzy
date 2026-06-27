@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
+import 'package:healthify/controller/auth_controller.dart';
 import 'package:healthify/routing/routes.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
@@ -18,13 +20,14 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
   bool _isLoginSelected = true;
+  bool _isGoogleLoading = false;
 
-  void _onFormSubmitted() {
-    if (_isLoginSelected) {
-      context.go(AppRoutes.main);
-    } else {
-      context.push(AppRoutes.onboarding);
-    }
+  void _onLoginSubmitted() {
+    context.go(AppRoutes.main);
+  }
+
+  void _onSignupSubmitted() {
+    context.go(AppRoutes.onboarding);
   }
 
   @override
@@ -62,7 +65,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 height: 50,
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.4),
+                  color: AppColors.primaryLight.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -85,7 +88,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             boxShadow: _isLoginSelected
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
+                                      color: Colors.black.withValues(alpha: 0.04),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     )
@@ -123,7 +126,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             boxShadow: !_isLoginSelected
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
+                                      color: Colors.black.withValues(alpha: 0.04),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     )
@@ -150,8 +153,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
               // Switch Forms with animated crossfade
               AnimatedCrossFade(
-                firstChild: LoginForm(onSubmit: _onFormSubmitted),
-                secondChild: SignupForm(onSubmit: _onFormSubmitted),
+                firstChild: LoginForm(onSubmit: _onLoginSubmitted),
+                secondChild: SignupForm(onSubmit: _onSignupSubmitted),
                 crossFadeState: _isLoginSelected
                     ? CrossFadeState.showFirst
                     : CrossFadeState.showSecond,
@@ -161,16 +164,38 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               // Divider & Google sign in (now below the login/password fields)
               const AuthDivider(),
               SocialLoginButton(
-                onPressed: () {
-                  // Mock Google Sign-In and navigate
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Simulating Google Sign-In...'),
-                      duration: Duration(milliseconds: 600),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                  Future.delayed(const Duration(milliseconds: 600), _onFormSubmitted);
+                isLoading: _isGoogleLoading,
+                onPressed: () async {
+                  setState(() {
+                    _isGoogleLoading = true;
+                  });
+                  final messenger = ScaffoldMessenger.of(context);
+                  final router = GoRouter.of(context);
+                  final authController = Get.find<AuthController>();
+                  final error = await authController.signInWithGoogle();
+
+                  if (mounted) {
+                    setState(() {
+                      _isGoogleLoading = false;
+                    });
+                  }
+
+                  if (error != null) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(error),
+                        backgroundColor: AppColors.error,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } else {
+                    // Route user depending on onboarding completed status
+                    if (authController.onboardingCompleted) {
+                      router.go(AppRoutes.main);
+                    } else {
+                      router.go(AppRoutes.onboarding);
+                    }
+                  }
                 },
               ),
 

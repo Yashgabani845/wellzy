@@ -37,9 +37,19 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
     super.dispose();
   }
 
-  void _addWaterWithAnimation(int amount) {
-    _controller.addWater(amount);
+  void _addWaterWithAnimation(int amount) async {
     _pulseController.forward(from: 0);
+    await _controller.addWater(amount);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added $amount ml of water! 💧'),
+          backgroundColor: const Color(0xFF1E88E5),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   @override
@@ -81,8 +91,7 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
                       _buildQuickAddSection(controller),
                       const SizedBox(height: 32),
 
-                      // ─── Weekly Overview ──────────────────────
-                      _buildWeeklyOverview(controller),
+
                     ],
                   ),
                 ),
@@ -154,7 +163,7 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
                     return CustomPaint(
                       painter: _ProgressRingPainter(
                         progress: value,
-                        trackColor: Colors.blue.withOpacity(0.08),
+                        trackColor: Colors.blue.withValues(alpha: 0.08),
                         progressColor: const Color(0xFF42A5F5),
                       ),
                     );
@@ -172,7 +181,7 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF42A5F5).withOpacity(0.12),
+                      color: const Color(0xFF42A5F5).withValues(alpha: 0.12),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
@@ -300,10 +309,10 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF42A5F5).withOpacity(0.1)),
+                border: Border.all(color: const Color(0xFF42A5F5).withValues(alpha: 0.1)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF42A5F5).withOpacity(0.06),
+                    color: const Color(0xFF42A5F5).withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -337,9 +346,9 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFF42A5F5).withOpacity(0.08),
+            color: const Color(0xFF42A5F5).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF42A5F5).withOpacity(0.25), width: 1.5),
+            border: Border.all(color: const Color(0xFF42A5F5).withValues(alpha: 0.25), width: 1.5),
           ),
           child: const Column(
             children: [
@@ -373,7 +382,7 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -422,7 +431,7 @@ class _LogWaterScreenState extends State<LogWaterScreen> with TickerProviderStat
           height: 100,
           alignment: Alignment.bottomCenter,
           decoration: BoxDecoration(
-            color: const Color(0xFF42A5F5).withOpacity(0.06),
+            color: const Color(0xFF42A5F5).withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(10),
           ),
           child: TweenAnimationBuilder<double>(
@@ -676,8 +685,8 @@ class _WavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF64B5F6).withOpacity(0.7),
-          const Color(0xFF42A5F5).withOpacity(0.85),
+          const Color(0xFF64B5F6).withValues(alpha: 0.7),
+          const Color(0xFF42A5F5).withValues(alpha: 0.85),
           const Color(0xFF1E88E5),
         ],
       ).createShader(Rect.fromLTWH(0, fillHeight, size.width, size.height - fillHeight));
@@ -697,7 +706,7 @@ class _WavePainter extends CustomPainter {
     path2.close();
 
     final paint2 = Paint()
-      ..color = const Color(0xFF42A5F5).withOpacity(0.3);
+      ..color = const Color(0xFF42A5F5).withValues(alpha: 0.3);
     canvas.drawPath(path2, paint2);
   }
 

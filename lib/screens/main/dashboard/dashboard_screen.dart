@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:healthify/controllers/dashboard_controller.dart';
 import 'package:healthify/theme/app_colors.dart';
-import 'package:healthify/theme/app_text_styles.dart';
+import 'package:healthify/widgets/common/empty_state_widget.dart';
 import 'package:healthify/widgets/dashboard/meal_card.dart';
 import 'package:healthify/widgets/dashboard/overview_card.dart';
 import 'package:healthify/widgets/dashboard/water_card.dart';
@@ -94,21 +94,31 @@ class DashboardScreen extends StatelessWidget {
                   const SizedBox(height: 32),
 
                   // Today's Meals
-                  FadeSlideIn(
+                  const FadeSlideIn(
                     delay: 300,
-                    child: const Text(
+                    child: Text(
                       'Today\'s Meals',
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                   ),
                   const SizedBox(height: 16),
                   
-                  ...data.meals.asMap().entries.map((entry) {
-                    return FadeSlideIn(
-                      delay: 350 + (entry.key * 50),
-                      child: MealCard(meal: entry.value),
-                    );
-                  }),
+                  if (data.meals.isEmpty)
+                    const FadeSlideIn(
+                      delay: 350,
+                      child: EmptyStateWidget(
+                        icon: Icons.restaurant_menu,
+                        title: 'No Meals Logged',
+                        message: 'Log your first meal today to see it here!',
+                      ),
+                    )
+                  else
+                    ...data.meals.asMap().entries.map((entry) {
+                      return FadeSlideIn(
+                        delay: 350 + (entry.key * 50),
+                        child: MealCard(meal: entry.value),
+                      );
+                    }),
                   
                   const SizedBox(height: 40), // Padding for bottom nav bar
                 ],

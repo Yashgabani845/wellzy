@@ -17,7 +17,7 @@ class OverviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -38,32 +38,37 @@ class OverviewCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Today\'s Overview', style: AppTextStyles.bodySecondary),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '$animatedConsumed',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Today\'s Overview', style: AppTextStyles.bodySecondary),
+                        const SizedBox(height: 8),
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$animatedConsumed',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' / ${data.caloriesTarget} kcal',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary, 
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            ' / ${data.caloriesTarget} kcal',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${data.caloriesRemaining} kcal remaining', style: const TextStyle(color: AppColors.primary, fontSize: 14)),
-                    ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('${data.caloriesRemaining} kcal remaining', style: const TextStyle(color: AppColors.primary, fontSize: 14)),
+                      ],
+                    ),
                   ),
                   // Circular Progress
                   SizedBox(
@@ -122,17 +127,18 @@ class OverviewCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                const SizedBox(height: 2),
                 Text(subtitle, style: const TextStyle(fontSize: 10, color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 6),
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: color.withOpacity(0.2),
+              backgroundColor: color.withValues(alpha: 0.2),
               color: color,
               minHeight: 6,
               borderRadius: BorderRadius.circular(4),

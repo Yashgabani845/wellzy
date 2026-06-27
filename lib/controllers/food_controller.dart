@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:healthify/models/food_model.dart';
 import 'package:healthify/services/food_service.dart';
+import 'package:healthify/core/utils/refresh_data.dart';
 
 class FoodController extends GetxController {
   final FoodService _service = FoodService();
@@ -113,6 +114,7 @@ class FoodController extends GetxController {
         date: DateTime.now(),
       );
       await _service.logFood(entry);
+      RefreshData.refreshAll();
       selectedFood = null;
       searchQuery = '';
       searchResults = [];

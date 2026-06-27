@@ -150,7 +150,7 @@ class _OnboardingPage4State extends State<OnboardingPage4> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withOpacity(0.3),
+              color: AppColors.primaryLight.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(

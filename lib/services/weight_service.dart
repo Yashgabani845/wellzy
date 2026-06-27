@@ -1,31 +1,129 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:healthify/core/models/weight_log_model.dart';
+import 'package:healthify/core/utils/current_user.dart';
 import 'package:healthify/models/weight_entry_model.dart';
 
 class WeightService {
-  // Mock: Replace this single method with a real API call later
-  Future<WeightHistory> fetchWeightHistory() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-    final now = DateTime.now();
+  CollectionReference _weightLogsRef(String uid) =>
+      _db.collection('users').doc(uid).collection('weight_logs');
+
+  DocumentReference _onboardingRef(String uid) =>
+      _db.collection('users').doc(uid).collection('onboarding').doc('onboarding');
+
+  DocumentReference _summaryRef(String uid, String date) =>
+      _db.collection('users').doc(uid).collection('daily_summary').doc(date);
+
+  DocumentReference _profileRef(String uid) =>
+      _db.collection('users').doc(uid).collection('profile').doc('info');
+
+  /// Fetches the real weight history from Firestore.
+  Future<WeightHistory> fetchWeightHistory() async {
+    final uid = await CurrentUser.getUid();
+    if (uid == null) throw Exception("User not authenticated");
+
+    // 1. Fetch onboarding info (for height & targetWeight)
+    final onboardingDoc = await _onboardingRef(uid).get();
+    double height = 175.0;
+    double targetWeight = 68.0;
+
+    if (onboardingDoc.exists && onboardingDoc.data() != null) {
+      final data = onboardingDoc.data() as Map<String, dynamic>;
+      height = (data['height'] as num?)?.toDouble() ?? 175.0;
+      targetWeight = (data['targetWeight'] as num?)?.toDouble() ?? 68.0;
+    }
+
+    // 2. Fetch weight logs
+    final logsSnap = await _weightLogsRef(uid)
+        .orderBy('loggedAt', descending: false)
+        .limit(30)
+        .get();
+
+    final List<WeightEntry> entries = [];
+    double currentWeight = targetWeight; // fallback
+
+    for (final doc in logsSnap.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final wtLog = WeightLogEntry.fromMap(data, docId: doc.id);
+      currentWeight = wtLog.weightKg;
+      entries.add(WeightEntry(
+        weightKg: wtLog.weightKg,
+        date: wtLog.loggedAt,
+        bmi: wtLog.bmi,
+      ));
+    }
+
+    // If no weight entries exist yet, fallback to onboarding weight
+    if (entries.isEmpty) {
+      if (onboardingDoc.exists && onboardingDoc.data() != null) {
+        final oData = onboardingDoc.data() as Map<String, dynamic>?;
+        final initialWeight = (oData?['weight'] as num?)?.toDouble() ?? 70.0;
+        currentWeight = initialWeight;
+        entries.add(WeightEntry(
+          weightKg: initialWeight,
+          date: DateTime.now().subtract(const Duration(minutes: 5)),
+          bmi: WeightLogEntry.calculateBmi(initialWeight, height),
+        ));
+      }
+    }
+
     return WeightHistory(
-      currentWeight: 72.5,
-      goalWeight: 68.0,
-      heightCm: 170.0,
-      entries: [
-        WeightEntry(weightKg: 74.2, date: now.subtract(const Duration(days: 6))),
-        WeightEntry(weightKg: 73.8, date: now.subtract(const Duration(days: 5))),
-        WeightEntry(weightKg: 73.5, date: now.subtract(const Duration(days: 4))),
-        WeightEntry(weightKg: 73.1, date: now.subtract(const Duration(days: 3))),
-        WeightEntry(weightKg: 72.9, date: now.subtract(const Duration(days: 2))),
-        WeightEntry(weightKg: 72.7, date: now.subtract(const Duration(days: 1))),
-        WeightEntry(weightKg: 72.5, date: now),
-      ],
+      currentWeight: currentWeight,
+      goalWeight: targetWeight,
+      heightCm: height,
+      entries: entries,
     );
   }
 
-  // Mock: Replace with real API call to save new weight
+  /// Logs a new weight and updates the profile info + daily summary.
   Future<bool> saveWeight(double weightKg) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    // POST to API here
+    final uid = await CurrentUser.getUid();
+    if (uid == null) return false;
+
+    final today = _getTodayDateString();
+    
+    // 1. Fetch height to calculate BMI
+    final onboardingDoc = await _onboardingRef(uid).get();
+    double height = 175.0;
+    if (onboardingDoc.exists && onboardingDoc.data() != null) {
+      final oData = onboardingDoc.data() as Map<String, dynamic>?;
+      height = (oData?['height'] as num?)?.toDouble() ?? 175.0;
+    }
+    
+    final bmi = WeightLogEntry.calculateBmi(weightKg, height);
+    final batch = _db.batch();
+
+    // 2. Add weight log entry
+    final weightLogDoc = _weightLogsRef(uid).doc();
+    final logEntry = WeightLogEntry(
+      id: weightLogDoc.id,
+      userId: uid,
+      weightKg: weightKg,
+      bmi: bmi,
+      loggedAt: DateTime.now(),
+      date: today,
+    );
+    batch.set(weightLogDoc, logEntry.toFirestoreMap());
+
+    // 3. Update summary weight
+    batch.set(_summaryRef(uid, today), {
+      'weightKg': weightKg,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // 4. Update weight in profile info
+    batch.set(_profileRef(uid), {
+      'currentWeight': weightKg,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await batch.commit();
     return true;
+  }
+
+  String _getTodayDateString() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
   }
 }

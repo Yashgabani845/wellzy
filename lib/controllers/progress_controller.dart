@@ -14,16 +14,16 @@ class ProgressController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadData();
+    fetchData();
   }
 
   void setPeriod(String period) {
     if (selectedPeriod == period) return;
     selectedPeriod = period;
-    _loadData();
+    fetchData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> fetchData() async {
     isLoading = true;
     update();
 

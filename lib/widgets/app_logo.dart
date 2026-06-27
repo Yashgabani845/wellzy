@@ -79,7 +79,7 @@ class LogoPainter extends CustomPainter {
 
     // White details/vein paint
     final Paint veinPaint = Paint()
-      ..color = Colors.white.withOpacity(0.9)
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.035
       ..strokeCap = StrokeCap.round

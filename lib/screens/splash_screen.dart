@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:healthify/controller/auth_controller.dart';
 import 'package:healthify/routing/routes.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/widgets/app_logo.dart';
+import 'package:healthify/core/services/secure_storage_service.dart' as healthify_storage;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -41,12 +44,50 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       _controller.repeat(reverse: true);
     });
 
-    // Navigate to Features Intro screen after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        context.go(AppRoutes.featuresIntro);
-      }
+    // Check auth status after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkSession();
     });
+  }
+
+  Future<void> _checkSession() async {
+    // Slight delay for smooth visual transition
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    if (!mounted) return;
+
+    final authController = Get.find<AuthController>();
+    // Wait for the auth controller to finish its initial restoration (it runs onInit)
+    while (authController.isLoading) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    if (!mounted) return;
+
+    // We can also double check secure storage directly if needed, 
+    // but authController already did it in restoreSession().
+    
+    // Import SecureStorageService to check first launch
+    // (Ensure you add the import if not present, I'll assume we can just use the controller's knowledge)
+    // Wait, AuthController doesn't know about firstLaunch. Let's check it directly.
+    final storageService = Get.put(healthify_storage.SecureStorageService());
+    final isFirstLaunch = await storageService.isFirstLaunch();
+
+    if (!mounted) return;
+
+    if (authController.currentUser != null) {
+      if (authController.onboardingCompleted) {
+        context.go(AppRoutes.main);
+      } else {
+        context.go(AppRoutes.onboarding);
+      }
+    } else {
+      if (isFirstLaunch) {
+        context.go(AppRoutes.featuresIntro);
+      } else {
+        context.go(AppRoutes.auth);
+      }
+    }
   }
 
   @override
@@ -163,8 +204,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           letterSpacing: -1,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: 8),
+                      Text(
                         'Eat Smarter. Live Better.',
                         style: TextStyle(
                           fontSize: 16,

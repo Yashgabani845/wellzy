@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:healthify/models/weight_entry_model.dart';
 import 'package:healthify/services/weight_service.dart';
+import 'package:healthify/core/utils/refresh_data.dart';
 
 class WeightController extends GetxController {
   final WeightService _weightService = WeightService();
@@ -74,6 +75,7 @@ class WeightController extends GetxController {
 
     try {
       await _weightService.saveWeight(currentWeight);
+      RefreshData.refreshAll();
       // Add to local entries
       entries.add(WeightEntry(weightKg: currentWeight, date: DateTime.now()));
     } finally {

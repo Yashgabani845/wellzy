@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
 import 'package:healthify/routing/routes.dart';
 import 'package:healthify/theme/app_colors.dart';
+import 'package:healthify/core/services/secure_storage_service.dart' as healthify_storage;
 
 class FeatureIntroScreen extends StatefulWidget {
   const FeatureIntroScreen({super.key});
@@ -41,19 +43,23 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
     super.dispose();
   }
 
-  void _nextPage() {
+  void _nextPage() async {
     if (_currentPage < _features.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      context.go(AppRoutes.auth);
+      final storage = Get.put(healthify_storage.SecureStorageService());
+      await storage.setFirstLaunchCompleted();
+      if (mounted) context.go(AppRoutes.auth);
     }
   }
 
-  void _skip() {
-    context.go(AppRoutes.auth);
+  void _skip() async {
+    final storage = Get.put(healthify_storage.SecureStorageService());
+    await storage.setFirstLaunchCompleted();
+    if (mounted) context.go(AppRoutes.auth);
   }
 
   @override

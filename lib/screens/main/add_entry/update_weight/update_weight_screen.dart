@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:healthify/controllers/weight_controller.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
+import 'package:healthify/widgets/common/loading_overlay.dart';
 
 class UpdateWeightScreen extends StatefulWidget {
   const UpdateWeightScreen({super.key});
@@ -87,37 +88,43 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
             centerTitle: false,
             iconTheme: const IconThemeData(color: AppColors.textPrimary),
           ),
-          body: Column(
+          body: Stack(
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 24),
-
-                      // Hero Weight Display
-                      _buildHeroWeight(controller),
-                      const SizedBox(height: 40),
-
-                      // Scroll Ruler
-                      _buildScrollRuler(controller),
-                      const SizedBox(height: 40),
-
-                      // BMI Card
-                      _buildBmiCard(controller),
-                      const SizedBox(height: 32),
-
-                      // Trend Graph
-                      _buildTrendGraph(controller),
-                      const SizedBox(height: 32),
-                    ],
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 24),
+    
+                          // Hero Weight Display
+                          _buildHeroWeight(controller),
+                          const SizedBox(height: 40),
+    
+                          // Scroll Ruler
+                          _buildScrollRuler(controller),
+                          const SizedBox(height: 40),
+    
+                          // BMI Card
+                          _buildBmiCard(controller),
+                          const SizedBox(height: 32),
+    
+                          // Trend Graph
+                          _buildTrendGraph(controller),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+    
+                  // Save Button (pinned at bottom)
+                  _buildSaveButton(controller),
+                ],
               ),
-
-              // Save Button (pinned at bottom)
-              _buildSaveButton(controller),
+              if (controller.isSaving)
+                const LoadingOverlay(message: 'Saving Weight...'),
             ],
           ),
         );
@@ -151,7 +158,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
             color: controller.weightDifference > 0
-                ? Colors.orange.withOpacity(0.1)
+                ? Colors.orange.withValues(alpha: 0.1)
                 : AppColors.primaryLight,
             borderRadius: BorderRadius.circular(20),
           ),
@@ -227,7 +234,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
                     borderRadius: BorderRadius.circular(2),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
+                        color: AppColors.primary.withValues(alpha: 0.4),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -263,7 +270,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -330,7 +337,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
                           border: Border.all(color: AppColors.primaryDark, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -361,7 +368,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _getBmiColor(controller.bmiCategory).withOpacity(0.12),
+                  color: _getBmiColor(controller.bmiCategory).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -403,7 +410,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -450,7 +457,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
         color: AppColors.background,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -480,9 +487,7 @@ class _UpdateWeightScreenState extends State<UpdateWeightScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             elevation: 0,
           ),
-          child: controller.isSaving
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Text('Save Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          child: const Text('Save Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -598,8 +603,8 @@ class _TrendChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          primaryColor.withOpacity(0.3),
-          primaryColor.withOpacity(0.0),
+          primaryColor.withValues(alpha: 0.3),
+          primaryColor.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(fillPath, fillPaint);

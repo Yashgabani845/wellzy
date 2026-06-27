@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
 
+import 'package:healthify/widgets/common/empty_state_widget.dart';
+
 class DiaryScreen extends StatelessWidget {
   const DiaryScreen({super.key});
 
@@ -15,10 +17,11 @@ class DiaryScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: false,
       ),
-      body: Center(
-        child: Text(
-          'Diary Content',
-          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+      body: const Center(
+        child: EmptyStateWidget(
+          icon: Icons.book_outlined,
+          title: 'Empty Diary',
+          message: 'You have not added any diary entries yet. Start logging your thoughts and feelings.',
         ),
       ),
     );

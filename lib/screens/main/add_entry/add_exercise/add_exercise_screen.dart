@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:healthify/controllers/exercise_controller.dart';
-import 'package:healthify/models/exercise_model.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
+import 'package:healthify/widgets/common/loading_overlay.dart';
 import 'dart:math' as math;
 
 class AddExerciseScreen extends StatefulWidget {
@@ -36,46 +36,52 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
             centerTitle: true,
             iconTheme: const IconThemeData(color: AppColors.textPrimary),
           ),
-          body: Column(
+          body: Stack(
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-
-                      // ─── Today's Burn Summary ─────────────────
-                      _buildBurnSummary(controller),
-                      const SizedBox(height: 28),
-
-                      // ─── Category Tabs ────────────────────────
-                      _buildCategoryTabs(controller),
-                      const SizedBox(height: 20),
-
-                      // ─── Exercise List ────────────────────────
-                      _buildExerciseList(controller),
-                      const SizedBox(height: 28),
-
-                      // ─── Duration Picker ──────────────────────
-                      if (controller.selectedExercise != null)
-                        _buildDurationPicker(controller),
-
-                      // ─── Today's Log ──────────────────────────
-                      if (controller.todayEntries.isNotEmpty) ...[
-                        const SizedBox(height: 28),
-                        _buildTodayLog(controller),
-                      ],
-                    ],
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+    
+                          // ─── Today's Burn Summary ─────────────────
+                          _buildBurnSummary(controller),
+                          const SizedBox(height: 28),
+    
+                          // ─── Category Tabs ────────────────────────
+                          _buildCategoryTabs(controller),
+                          const SizedBox(height: 20),
+    
+                          // ─── Exercise List ────────────────────────
+                          _buildExerciseList(controller),
+                          const SizedBox(height: 28),
+    
+                          // ─── Duration Picker ──────────────────────
+                          if (controller.selectedExercise != null)
+                            _buildDurationPicker(controller),
+    
+                          // ─── Today's Log ──────────────────────────
+                          if (controller.todayEntries.isNotEmpty) ...[
+                            const SizedBox(height: 28),
+                            _buildTodayLog(controller),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+    
+                  // ─── Log Button (pinned) ──────────────────────────
+                  if (controller.selectedExercise != null)
+                    _buildLogButton(controller),
+                ],
               ),
-
-              // ─── Log Button (pinned) ──────────────────────────
-              if (controller.selectedExercise != null)
-                _buildLogButton(controller),
+              if (controller.isLogging)
+                const LoadingOverlay(message: 'Logging Exercise...'),
             ],
           ),
         );
@@ -92,15 +98,11 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF7043), Color(0xFFFF5722)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF5722).withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -218,16 +220,23 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFF5722) : Colors.white,
+                color: isSelected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: isSelected ? null : Border.all(color: AppColors.border),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: const Color(0xFFFF5722).withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))]
+                    ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))]
                     : null,
               ),
               child: Row(
                 children: [
-                  Text(category.icon, style: const TextStyle(fontSize: 16)),
+                  Icon(
+                    category.id == 'cardio' ? Icons.directions_run :
+                    category.id == 'strength' ? Icons.fitness_center :
+                    category.id == 'flexibility' ? Icons.self_improvement :
+                    Icons.sports_soccer,
+                    size: 18,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     category.name,
@@ -257,72 +266,107 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         children: [
           const Text('Select Exercise', style: AppTextStyles.subSectionHeading),
           const SizedBox(height: 12),
-          ...controller.currentExercises.map((exercise) {
-            final isSelected = controller.selectedExercise?.id == exercise.id;
-            return GestureDetector(
-              onTap: () => controller.selectExercise(exercise),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFFF5722).withOpacity(0.08) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFFFF5722) : AppColors.border,
-                    width: isSelected ? 2 : 1,
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.85, // Taller cards for images
+            ),
+            itemCount: controller.currentExercises.length,
+            itemBuilder: (context, index) {
+              final exercise = controller.currentExercises[index];
+              final isSelected = controller.selectedExercise?.id == exercise.id;
+
+              return GestureDetector(
+                onTap: () => controller.selectExercise(exercise),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.border,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))]
+                        : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Image Section
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Container(
+                                color: const Color(0xFFF9F9F9),
+                                child: exercise.imageAsset.isNotEmpty
+                                    ? Image.asset(
+                                        exercise.imageAsset,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            const Icon(Icons.fitness_center, color: AppColors.textLight, size: 40),
+                                      )
+                                    : const Icon(Icons.fitness_center, color: AppColors.textLight, size: 40),
+                              ),
+                              if (isSelected)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check, size: 14, color: Colors.white),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Text Section
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              exercise.name,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                fontSize: 14,
+                                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '~${exercise.caloriesPerMinute} kcal/min',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    // Selection indicator
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected ? const Color(0xFFFF5722) : Colors.transparent,
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFFFF5722) : AppColors.border,
-                          width: 2,
-                        ),
-                      ),
-                      child: isSelected
-                          ? const Icon(Icons.check, size: 14, color: Colors.white)
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        exercise.name,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 16,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    // Calories badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5722).withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '~${exercise.caloriesPerMinute} kcal/min',
-                        style: const TextStyle(
-                          color: Color(0xFFFF5722),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -341,7 +385,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -358,7 +402,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFFFF5722),
+                    color: AppColors.primary,
                   ),
                 ),
               ],
@@ -368,10 +412,10 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
             // Slider
             SliderTheme(
               data: SliderThemeData(
-                activeTrackColor: const Color(0xFFFF5722),
-                inactiveTrackColor: const Color(0xFFFF5722).withOpacity(0.1),
-                thumbColor: const Color(0xFFFF5722),
-                overlayColor: const Color(0xFFFF5722).withOpacity(0.1),
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: AppColors.primary.withValues(alpha: 0.1),
+                thumbColor: AppColors.primary,
+                overlayColor: AppColors.primary.withValues(alpha: 0.1),
                 trackHeight: 6,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
               ),
@@ -386,29 +430,35 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
             // Quick duration chips
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [15, 30, 45, 60, 90].map((min) {
-                final isActive = controller.durationMinutes == min;
-                return GestureDetector(
-                  onTap: () => controller.setDuration(min),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isActive ? const Color(0xFFFF5722) : const Color(0xFFFF5722).withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${min}m',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: isActive ? Colors.white : const Color(0xFFFF5722),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [15, 30, 45, 60, 90].map((min) {
+                  final isActive = controller.durationMinutes == min;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => controller.setDuration(min),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isActive ? AppColors.primary : AppColors.primary.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${min}m',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: isActive ? Colors.white : AppColors.primary,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
 
             // Estimated calories
@@ -422,7 +472,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.local_fire_department, color: Color(0xFFFF5722), size: 20),
+                  const Icon(Icons.local_fire_department, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Estimated burn: ',
@@ -479,10 +529,10 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF5722).withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.fitness_center, color: Color(0xFFFF5722), size: 20),
+                    child: const Icon(Icons.fitness_center, color: AppColors.primary, size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -504,7 +554,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                   Text(
                     '${entry.caloriesBurned} kcal',
                     style: const TextStyle(
-                      color: Color(0xFFFF5722),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -528,7 +578,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         color: AppColors.background,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -546,7 +596,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text('Exercise logged! 🔥'),
-                        backgroundColor: const Color(0xFFFF5722),
+                        backgroundColor: AppColors.primary,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -554,24 +604,22 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                   }
                 },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF5722),
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             elevation: 0,
           ),
-          child: controller.isLogging
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.add, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Log ${controller.selectedExercise?.name ?? "Exercise"} · ${controller.estimatedCalories} kcal',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Log ${controller.selectedExercise?.name ?? "Exercise"} · ${controller.estimatedCalories} kcal',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -592,7 +640,7 @@ class _BurnRingPainter extends CustomPainter {
 
     // Track
     final trackPaint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+      ..color = Colors.white.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;

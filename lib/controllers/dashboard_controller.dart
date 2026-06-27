@@ -29,4 +29,11 @@ class DashboardController extends GetxController {
       update();
     }
   }
+
+  static void refreshAll() {
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().fetchData();
+    }
+    // We import ProgressController locally or use dynamic dispatch, but GetX allows finding by type if imported.
+  }
 }

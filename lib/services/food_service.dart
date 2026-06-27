@@ -1,7 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:healthify/core/models/daily_summary_model.dart';
+import 'package:healthify/core/utils/current_user.dart';
 import 'package:healthify/models/food_model.dart';
 
 class FoodService {
-  // Mock food database — replace with real API search
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  CollectionReference _foodLogsRef(String uid) =>
+      _db.collection('users').doc(uid).collection('food_logs');
+
+  DocumentReference _summaryRef(String uid, String date) =>
+      _db.collection('users').doc(uid).collection('daily_summary').doc(date);
+
+  DocumentReference _goalsRef(String uid) =>
+      _db.collection('users').doc(uid).collection('goals').doc('info');
+
+  CollectionReference _favouritesRef(String uid) =>
+      _db.collection('users').doc(uid).collection('favourite_foods');
+
+  // Predefined food database (fallback / local search database)
   final List<FoodItem> _foodDatabase = [
     // Fruits
     FoodItem(id: 'f1', name: 'Banana', brand: 'Generic', category: 'Fruits', caloriesPer100g: 89, proteinPer100g: 1.1, carbsPer100g: 22.8, fatPer100g: 0.3, fiberPer100g: 2.6, defaultServingGrams: 118),
@@ -28,9 +45,9 @@ class FoodService {
     FoodItem(id: 's3', name: 'Dark Chocolate (70%)', brand: 'Generic', category: 'Snacks', caloriesPer100g: 598, proteinPer100g: 7.8, carbsPer100g: 45.9, fatPer100g: 42.6, fiberPer100g: 10.9, defaultServingGrams: 30),
   ];
 
-  // Search — replace with API call
+  /// Searches for food in the local DB.
   Future<List<FoodItem>> searchFood(String query) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 200));
     if (query.isEmpty) return [];
     final lowerQuery = query.toLowerCase();
     return _foodDatabase
@@ -38,10 +55,9 @@ class FoodService {
         .toList();
   }
 
-  // Recent / Recommended — replace with API call
+  /// Fetches local database recommendations.
   Future<List<FoodItem>> fetchRecommendations() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    // Return a subset as "frequently eaten"
+    await Future.delayed(const Duration(milliseconds: 200));
     return [
       _foodDatabase[0],  // Banana
       _foodDatabase[3],  // White Rice
@@ -52,9 +68,75 @@ class FoodService {
     ];
   }
 
-  // Log food — replace with API call
+  /// Logs food item to Firestore and updates daily summary atomically.
   Future<bool> logFood(FoodLogEntry entry) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    final uid = await CurrentUser.getUid();
+    if (uid == null) return false;
+
+    final today = _getTodayDateString();
+    final batch = _db.batch();
+
+    // 1. Log the food entry
+    final logDocRef = _foodLogsRef(uid).doc();
+    final newEntry = FoodLogEntry(
+      id: logDocRef.id,
+      userId: uid,
+      food: entry.food,
+      servingGrams: entry.servingGrams,
+      servings: entry.servings,
+      mealType: entry.mealType,
+      date: DateTime.now(),
+      dateStr: today,
+    );
+    batch.set(logDocRef, newEntry.toFirestoreMap());
+
+    // 2. Batch update/initialize daily_summary
+    final summaryDoc = await _summaryRef(uid, today).get();
+    
+    final addCals = newEntry.totalCalories.round();
+    final addProtein = newEntry.totalProtein.round();
+    final addCarbs = newEntry.totalCarbs.round();
+    final addFat = newEntry.totalFat.round();
+
+    if (summaryDoc.exists) {
+      batch.update(_summaryRef(uid, today), {
+        'totalCaloriesConsumed': FieldValue.increment(addCals),
+        'totalProtein': FieldValue.increment(addProtein),
+        'totalCarbs': FieldValue.increment(addCarbs),
+        'totalFat': FieldValue.increment(addFat),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      // Get goals for fallback targets
+      final goalsDoc = await _goalsRef(uid).get();
+      int waterGoal = 2500;
+      int caloriesGoal = 2000;
+      if (goalsDoc.exists && goalsDoc.data() != null) {
+        final gData = goalsDoc.data() as Map<String, dynamic>?;
+        waterGoal = (gData?['dailyWaterGoalMl'] ?? 2500) as int;
+        caloriesGoal = (gData?['dailyCaloriesGoal'] ?? 2000) as int;
+      }
+
+      final summary = DailySummary(
+        date: today,
+        userId: uid,
+        totalCaloriesConsumed: addCals,
+        totalProtein: addProtein,
+        totalCarbs: addCarbs,
+        totalFat: addFat,
+        waterGoalMl: waterGoal,
+        caloriesGoal: caloriesGoal,
+        updatedAt: DateTime.now(),
+      );
+      batch.set(_summaryRef(uid, today), summary.toFirestoreMap());
+    }
+
+    await batch.commit();
     return true;
+  }
+
+  String _getTodayDateString() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
   }
 }

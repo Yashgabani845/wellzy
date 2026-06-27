@@ -18,7 +18,7 @@ class AppConstants {
   // Soft Shadows
   static final List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
+      color: Colors.black.withValues(alpha: 0.04),
       blurRadius: 16,
       offset: const Offset(0, 4),
     ),
@@ -26,7 +26,7 @@ class AppConstants {
 
   static final List<BoxShadow> buttonShadow = [
     BoxShadow(
-      color: const Color(0xFF6BCB77).withOpacity(0.2),
+      color: const Color(0xFF6BCB77).withValues(alpha: 0.2),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),

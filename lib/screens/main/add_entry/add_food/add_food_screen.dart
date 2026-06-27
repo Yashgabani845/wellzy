@@ -4,6 +4,7 @@ import 'package:healthify/controllers/food_controller.dart';
 import 'package:healthify/models/food_model.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
+import 'package:healthify/widgets/common/loading_overlay.dart';
 
 class AddFoodScreen extends StatefulWidget {
   const AddFoodScreen({super.key});
@@ -72,10 +73,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   // ═══════════════════════════════════════════════════════════════
   Widget _buildMealTypeSelector(FoodController controller) {
     final meals = [
-      {'id': 'breakfast', 'label': 'Breakfast', 'icon': '🌅'},
-      {'id': 'lunch', 'label': 'Lunch', 'icon': '☀️'},
-      {'id': 'dinner', 'label': 'Dinner', 'icon': '🌆'},
-      {'id': 'snack', 'label': 'Snack', 'icon': '🌙'},
+      {'id': 'breakfast', 'label': 'Breakfast', 'icon': Icons.wb_twilight},
+      {'id': 'lunch', 'label': 'Lunch', 'icon': Icons.wb_sunny},
+      {'id': 'dinner', 'label': 'Dinner', 'icon': Icons.nights_stay},
+      {'id': 'snack', 'label': 'Snack', 'icon': Icons.fastfood},
     ];
 
     return SizedBox(
@@ -88,7 +89,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           final meal = meals[index];
           final isSelected = controller.selectedMealType == meal['id'];
           return GestureDetector(
-            onTap: () => controller.setMealType(meal['id']!),
+            onTap: () => controller.setMealType(meal['id'] as String),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -98,15 +99,19 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: isSelected ? null : Border.all(color: AppColors.border),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: AppColors.primaryDark.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))]
+                    ? [BoxShadow(color: AppColors.primaryDark.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))]
                     : null,
               ),
               child: Row(
                 children: [
-                  Text(meal['icon']!, style: const TextStyle(fontSize: 14)),
+                  Icon(
+                    meal['icon'] as IconData,
+                    size: 16,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
-                    meal['label']!,
+                    meal['label'] as String,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -134,7 +139,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -333,8 +338,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                   topRight: Radius.circular(28),
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                 children: [
                   // Drag handle
                   const SizedBox(height: 12),
@@ -520,15 +527,25 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 0,
                         ),
-                        child: ctrl.isLogging
-                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text(
-                                'Add to ${_capitalize(ctrl.selectedMealType)} · ${ctrl.totalCalories.toInt()} kcal',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                              ),
+                        child: Text(
+                          'Add to ${_capitalize(ctrl.selectedMealType)} · ${ctrl.totalCalories.toInt()} kcal',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                   ),
+                ],
+              ),
+                  if (ctrl.isLogging)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(28),
+                          topRight: Radius.circular(28),
+                        ),
+                        child: const LoadingOverlay(message: 'Adding Food...'),
+                      ),
+                    ),
                 ],
               ),
             );

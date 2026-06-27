@@ -12,7 +12,20 @@
           "package_name": "com.wellzy.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "642187573316-17dnsptgac5cbvh80ept3n4ohv9d1c3k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wellzy.app",
+            "certificate_hash": "e3929bed56267f9bfc0e25ad7158a363673e8bbb"
+          }
+        },
+        {
+          "client_id": "642187573316-ggvv2jul1gjkanltdn8fa9orojsna9qq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBfncZ97EFlsEf7Qx2rYxDKeLHhaEiDxAw"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "642187573316-ggvv2jul1gjkanltdn8fa9orojsna9qq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

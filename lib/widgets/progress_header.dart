@@ -38,7 +38,7 @@ class ProgressHeader extends StatelessWidget {
                   color: isCurrent
                       ? AppColors.primary
                       : isPassed
-                          ? AppColors.primary.withOpacity(0.5)
+                          ? AppColors.primary.withValues(alpha: 0.5)
                           : AppColors.border,
                 ),
               );

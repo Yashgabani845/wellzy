@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
+import 'package:healthify/controller/auth_controller.dart';
+import 'package:healthify/controller/onboarding_controller.dart';
 import 'package:healthify/routing/routes.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/widgets/progress_header.dart';
@@ -43,15 +46,100 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _nextPage() {
+  Map<String, dynamic> _getDataForPage(int page) {
+    switch (page) {
+      case 0:
+        return {
+          'goal': _selectedGoal,
+          'goalQuestion': 'What is your goal?',
+        };
+      case 1:
+        return {
+          'gender': _selectedGender,
+          'genderQuestion': 'Gender',
+          'age': _selectedAge,
+          'ageQuestion': 'Age',
+        };
+      case 2:
+        return {
+          'height': _currentHeight,
+          'heightQuestion': 'Height',
+          'weight': _currentWeight,
+          'weightQuestion': 'Weight',
+        };
+      case 3:
+        return {
+          'targetWeight': _targetWeight,
+          'targetWeightQuestion': 'Target Weight',
+        };
+      case 4:
+        return {
+          'activityLevel': _selectedActivity,
+          'activityLevelQuestion': 'Activity Level',
+        };
+      case 5:
+        return {
+          'dietPreference': _selectedDiets,
+          'dietPreferenceQuestion': 'Diet Preference',
+        };
+      default:
+        return {};
+    }
+  }
+
+  Map<String, dynamic> _getAllOnboardingData() {
+    return {
+      'goal': _selectedGoal,
+      'goalQuestion': 'What is your goal?',
+      'gender': _selectedGender,
+      'genderQuestion': 'Gender',
+      'age': _selectedAge,
+      'ageQuestion': 'Age',
+      'height': _currentHeight,
+      'heightQuestion': 'Height',
+      'weight': _currentWeight,
+      'weightQuestion': 'Weight',
+      'targetWeight': _targetWeight,
+      'targetWeightQuestion': 'Target Weight',
+      'activityLevel': _selectedActivity,
+      'activityLevelQuestion': 'Activity Level',
+      'dietPreference': _selectedDiets,
+      'dietPreferenceQuestion': 'Diet Preference',
+      'currentStep': 5,
+    };
+  }
+
+  void _nextPage() async {
+    final authController = Get.find<AuthController>();
+    final onboardingController = Get.find<OnboardingController>();
+    final uid = authController.currentUser?.uid;
+
+    if (uid != null) {
+      final pageData = _getDataForPage(_currentPage);
+      if (_currentPage < _totalSteps - 1) {
+        await onboardingController.saveStep(
+          uid: uid,
+          step: _currentPage,
+          stepData: pageData,
+        );
+      } else {
+        final allData = _getAllOnboardingData();
+        await onboardingController.completeOnboarding(
+          uid: uid,
+          finalData: allData,
+        );
+      }
+    }
+
     if (_currentPage < _totalSteps - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
       );
     } else {
-      // Completed last page -> go to Success Screen
-      context.push(AppRoutes.success);
+      if (mounted) {
+        context.push(AppRoutes.success);
+      }
     }
   }
 
@@ -64,9 +152,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _skipOnboarding() {
-    // Navigate straight to Success Screen
-    context.push(AppRoutes.success);
+  void _skipOnboarding() async {
+    final authController = Get.find<AuthController>();
+    final onboardingController = Get.find<OnboardingController>();
+    final uid = authController.currentUser?.uid;
+
+    if (uid != null) {
+      final allData = _getAllOnboardingData();
+      await onboardingController.completeOnboarding(
+        uid: uid,
+        finalData: allData,
+      );
+    }
+
+    if (mounted) {
+      context.push(AppRoutes.success);
+    }
   }
 
   @override

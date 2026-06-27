@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:healthify/models/dashboard_model.dart';
 import 'package:healthify/theme/app_colors.dart';
 
+import 'package:go_router/go_router.dart';
+import 'package:healthify/routing/routes.dart';
+
 class WaterCard extends StatefulWidget {
   final WaterData data;
 
@@ -32,14 +35,16 @@ class _WaterCardState extends State<WaterCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.logWater),
+      child: Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -78,7 +83,7 @@ class _WaterCardState extends State<WaterCard> with SingleTickerProviderStateMix
                                 width: constraints.maxWidth * 2.5,
                                 height: constraints.maxWidth * 2.5,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.4),
+                                  color: Colors.white.withValues(alpha: 0.4),
                                   borderRadius: BorderRadius.circular(constraints.maxWidth * 1.05), // creates a soft squircle
                                 ),
                               ),
@@ -149,6 +154,6 @@ class _WaterCardState extends State<WaterCard> with SingleTickerProviderStateMix
           ),
         ],
       ),
-    );
+    ));
   }
 }

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:healthify/services/water_service.dart';
+import 'package:healthify/core/utils/refresh_data.dart';
 
 class LogWaterController extends GetxController {
   final WaterService _waterService = WaterService();
@@ -20,20 +21,20 @@ class LogWaterController extends GetxController {
     update();
 
     try {
-      final waterData = await _waterService.fetchWaterData();
-      currentIntakeMl = (waterData.consumed * 1000).toInt();
-      dailyGoalMl = (waterData.total * 1000).toInt();
+      final summary = await _waterService.fetchWaterSummary();
+      currentIntakeMl = ((summary['consumed'] ?? 0.0) * 1000).toInt();
+      dailyGoalMl = ((summary['total'] ?? 2.5) * 1000).toInt();
     } catch (e) {
       // Fallback in case of error
-      currentIntakeMl = 1200;
-      dailyGoalMl = 3000;
+      currentIntakeMl = 0;
+      dailyGoalMl = 2500;
     } finally {
       isLoading = false;
       update();
     }
   }
 
-  void addWater(int amountMl) {
+  Future<void> addWater(int amountMl) async {
     currentIntakeMl += amountMl;
     
     // Cap visual
@@ -43,8 +44,12 @@ class LogWaterController extends GetxController {
     
     update();
 
-    // Persist to service (convert back to Liters)
-    _waterService.updateWaterIntake(currentIntakeMl / 1000);
+    // Persist to service atomically
+    await _waterService.logWater(amountMl);
+    
+    // Refresh summary
+    await _loadWaterData();
+    RefreshData.refreshAll();
   }
 
   double get progress {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/widgets/dashboard/add_entry_bottom_sheet.dart';
 

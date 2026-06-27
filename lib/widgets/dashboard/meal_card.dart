@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:healthify/models/dashboard_model.dart';
 import 'package:healthify/theme/app_colors.dart';
 
+import 'package:go_router/go_router.dart';
+import 'package:healthify/routing/routes.dart';
+
 class MealCard extends StatelessWidget {
   final Meal meal;
 
@@ -9,7 +12,9 @@ class MealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.addFood),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -18,7 +23,7 @@ class MealCard extends StatelessWidget {
         border: meal.isCompleted ? null : Border.all(color: AppColors.border, width: 1.5, style: BorderStyle.solid), // Dashed effect can be simulated, using solid for now
         boxShadow: meal.isCompleted ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -31,7 +36,7 @@ class MealCard extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: meal.isCompleted ? AppColors.border : AppColors.border.withOpacity(0.5),
+              color: meal.isCompleted ? AppColors.border : AppColors.border.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
               image: meal.isCompleted && meal.imagePath != null
                   ? DecorationImage(image: AssetImage(meal.imagePath!), fit: BoxFit.cover)
@@ -87,6 +92,6 @@ class MealCard extends StatelessWidget {
             ),
         ],
       ),
-    );
+    ));
   }
 }

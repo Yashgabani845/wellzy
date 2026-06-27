@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:healthify/models/exercise_model.dart';
 import 'package:healthify/services/exercise_service.dart';
+import 'package:healthify/core/utils/refresh_data.dart';
 
 class ExerciseController extends GetxController {
   final ExerciseService _service = ExerciseService();
@@ -83,6 +84,7 @@ class ExerciseController extends GetxController {
 
     try {
       await _service.logExercise(selectedExercise!, durationMinutes);
+      RefreshData.refreshAll();
 
       // Update local state
       final entry = ExerciseEntry(

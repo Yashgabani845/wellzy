@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
+import 'package:healthify/controller/auth_controller.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_spacing.dart';
 import 'package:healthify/theme/app_text_styles.dart';
@@ -12,6 +15,24 @@ class OnboardingSuccess extends StatelessWidget {
     super.key,
     required this.onStartJourney,
   });
+
+  Future<Map<String, dynamic>> _fetchGoals() async {
+    final authController = Get.find<AuthController>();
+    final uid = authController.currentUser?.uid;
+    if (uid == null) {
+      throw Exception('User not logged in');
+    }
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('goals')
+        .doc('info')
+        .get();
+    if (doc.exists && doc.data() != null) {
+      return doc.data()!;
+    }
+    return <String, dynamic>{};
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,49 +70,69 @@ class OnboardingSuccess extends StatelessWidget {
 
               // Summary Cards Grid
               Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  children: const [
-                    MetricCard(
-                      title: 'DAILY CALORIE TARGET',
-                      value: '2,050',
-                      unit: 'kcal',
-                      icon: Icons.local_fire_department_rounded,
-                      accentColor: Colors.orange,
-                    ),
-                    SizedBox(height: 12),
-                    MetricCard(
-                      title: 'PROTEIN',
-                      value: '140',
-                      unit: 'g',
-                      icon: Icons.egg_alt_outlined,
-                      accentColor: Colors.blue,
-                    ),
-                    SizedBox(height: 12),
-                    MetricCard(
-                      title: 'CARBOHYDRATES',
-                      value: '220',
-                      unit: 'g',
-                      icon: Icons.grain_rounded,
-                      accentColor: Colors.amber,
-                    ),
-                    SizedBox(height: 12),
-                    MetricCard(
-                      title: 'DIETARY FATS',
-                      value: '65',
-                      unit: 'g',
-                      icon: Icons.opacity_rounded,
-                      accentColor: Colors.redAccent,
-                    ),
-                    SizedBox(height: 12),
-                    MetricCard(
-                      title: 'ESTIMATED GOAL TIMELINE',
-                      value: '14',
-                      unit: 'Weeks',
-                      icon: Icons.calendar_month_outlined,
-                      accentColor: AppColors.primary,
-                    ),
-                  ],
+                child: FutureBuilder<Map<String, dynamic>>(
+                  future: _fetchGoals(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      );
+                    }
+
+                    final data = snapshot.data ?? <String, dynamic>{};
+                    final calories = data['dailyCaloriesGoal']?.toString() ?? '2,050';
+                    final protein = data['dailyProteinGoal']?.toString() ?? '140';
+                    final carbs = data['dailyCarbsGoal']?.toString() ?? '220';
+                    final fat = data['dailyFatGoal']?.toString() ?? '65';
+                    final timeline = data['estimatedTimelineWeeks']?.toString() ?? '14';
+
+                    return ListView(
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        MetricCard(
+                          title: 'DAILY CALORIE TARGET',
+                          value: calories,
+                          unit: 'kcal',
+                          icon: Icons.local_fire_department_rounded,
+                          accentColor: Colors.orange,
+                        ),
+                        const SizedBox(height: 12),
+                        MetricCard(
+                          title: 'PROTEIN',
+                          value: protein,
+                          unit: 'g',
+                          icon: Icons.egg_alt_outlined,
+                          accentColor: Colors.blue,
+                        ),
+                        const SizedBox(height: 12),
+                        MetricCard(
+                          title: 'CARBOHYDRATES',
+                          value: carbs,
+                          unit: 'g',
+                          icon: Icons.grain_rounded,
+                          accentColor: Colors.amber,
+                        ),
+                        const SizedBox(height: 12),
+                        MetricCard(
+                          title: 'DIETARY FATS',
+                          value: fat,
+                          unit: 'g',
+                          icon: Icons.opacity_rounded,
+                          accentColor: Colors.redAccent,
+                        ),
+                        const SizedBox(height: 12),
+                        MetricCard(
+                          title: 'ESTIMATED GOAL TIMELINE',
+                          value: timeline,
+                          unit: 'Weeks',
+                          icon: Icons.calendar_month_outlined,
+                          accentColor: AppColors.primary,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
@@ -133,7 +174,7 @@ class SuccessBadgePainter extends CustomPainter {
 
     // Inner ring border
     final Paint ringPaint = Paint()
-      ..color = const Color(0xFF6BCB77).withOpacity(0.3)
+      ..color = const Color(0xFF6BCB77).withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..isAntiAlias = true;

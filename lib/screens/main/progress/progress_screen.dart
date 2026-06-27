@@ -4,6 +4,7 @@ import 'package:healthify/controllers/progress_controller.dart';
 import 'package:healthify/models/progress_model.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
+import 'package:healthify/widgets/common/empty_state_widget.dart';
 import 'dart:ui' as ui;
 
 class ProgressScreen extends StatefulWidget {
@@ -32,9 +33,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
               child: _buildTimeSelector(controller),
             ),
           ),
-          body: controller.isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-              : _buildContent(controller),
+          body: RefreshIndicator(
+            onRefresh: () async => await controller.fetchData(),
+            color: AppColors.primary,
+            child: controller.isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : _buildContent(controller),
+          ),
         );
       },
     );
@@ -88,10 +93,26 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // Main Content
   // ═══════════════════════════════════════════════════════════════
   Widget _buildContent(ProgressController controller) {
-    if (controller.data == null) return const SizedBox.shrink();
+    if (controller.data == null || (controller.data!.weightTrends.isEmpty && controller.data!.nutritionTrends.isEmpty)) {
+      return LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: const Center(
+              child: EmptyStateWidget(
+                icon: Icons.trending_up,
+                title: 'No Progress Data',
+                message: 'Log your meals and weight to see your progress over time.',
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
       padding: const EdgeInsets.only(bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +150,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -223,7 +244,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -291,8 +312,8 @@ class _WeightChartPainter extends CustomPainter {
         const Offset(0, 0),
         Offset(0, size.height),
         [
-          AppColors.primaryDark.withOpacity(0.3),
-          AppColors.primaryDark.withOpacity(0.0),
+          AppColors.primaryDark.withValues(alpha: 0.3),
+          AppColors.primaryDark.withValues(alpha: 0.0),
         ],
       );
     canvas.drawPath(fillPath, fillPaint);
@@ -351,7 +372,7 @@ class _NutritionChartPainter extends CustomPainter {
         Rect.fromLTWH(x, goalY, barWidth, size.height - goalY),
         const Radius.circular(6),
       );
-      final goalPaint = Paint()..color = Colors.grey.withOpacity(0.15);
+      final goalPaint = Paint()..color = Colors.grey.withValues(alpha: 0.15);
       canvas.drawRRect(goalRect, goalPaint);
 
       // Consumed (colored bar)
@@ -376,7 +397,7 @@ class _NutritionChartPainter extends CustomPainter {
     // Draw target line across the chart
     final targetLineY = size.height - (trends.first.calorieGoal / maxCals) * size.height;
     final targetLinePaint = Paint()
-      ..color = Colors.grey.withOpacity(0.5)
+      ..color = Colors.grey.withValues(alpha: 0.5)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     

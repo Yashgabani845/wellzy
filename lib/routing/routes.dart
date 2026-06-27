@@ -4,7 +4,7 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String featuresIntro = '/features-intro';
   static const String main = '/main';
-  static const String auth = '/';
+  static const String auth = '/auth';
   static const String onboarding = '/onboarding';
   static const String success = '/success';
   static const String addFood = '/add-food';
@@ -12,4 +12,5 @@ class AppRoutes {
   static const String updateWeight = '/update-weight';
   static const String addExercise = '/add-exercise';
   static const String logWater = '/log-water';
+  static const String addSleep = '/add-sleep';
 }

@@ -83,6 +83,13 @@ class AddEntryBottomSheet extends StatelessWidget {
                   color: Colors.cyan,
                   route: AppRoutes.logWater,
                 ),
+                _buildActionCard(
+                  context,
+                  title: 'Log Sleep',
+                  icon: Icons.nights_stay,
+                  color: const Color(0xFF5C6BC0),
+                  route: AppRoutes.addSleep,
+                ),
             ],
           ),
         ],
@@ -102,7 +109,7 @@ class AddEntryBottomSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -114,7 +121,7 @@ class AddEntryBottomSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 32),

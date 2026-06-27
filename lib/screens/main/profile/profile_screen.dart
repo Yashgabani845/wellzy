@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
+import 'package:healthify/controller/auth_controller.dart';
+import 'package:healthify/routing/routes.dart';
 import 'package:healthify/controllers/profile_controller.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
@@ -32,12 +35,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             physics: const BouncingScrollPhysics(),
             slivers: [
               // ─── App Bar ──────────────────────────────────────────────
-              SliverAppBar(
+              const SliverAppBar(
                 backgroundColor: AppColors.background,
                 elevation: 0,
                 pinned: true,
                 centerTitle: true,
-                title: const Text('Profile', style: AppTextStyles.sectionHeading),
+                title: Text('Profile', style: AppTextStyles.sectionHeading),
               ),
 
               // ─── Content ────────────────────────────────────────────
@@ -97,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -189,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -201,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -277,16 +280,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Logout Button
           Center(
             child: TextButton(
-              onPressed: () {
-                // controller.logout();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Logout clicked (Mock)'),
-                    backgroundColor: AppColors.primaryDark,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
+              onPressed: () async {
+                final authController = Get.find<AuthController>();
+                await authController.logout();
+                if (context.mounted) {
+                  context.go(AppRoutes.auth);
+                }
               },
               child: const Text(
                 'Log Out',
@@ -372,7 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           CupertinoSwitch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeTrackColor: AppColors.primary,
           ),
         ],
       ),

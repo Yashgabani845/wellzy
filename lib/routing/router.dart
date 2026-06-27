@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
+import 'package:healthify/controller/auth_controller.dart';
 import 'package:healthify/routing/routes.dart';
 import 'package:healthify/screens/splash_screen.dart';
 import 'package:healthify/screens/onboarding/feature_intro_screen.dart';
@@ -12,6 +14,8 @@ import 'package:healthify/screens/main/add_entry/scan_barcode/scan_barcode_scree
 import 'package:healthify/screens/main/add_entry/update_weight/update_weight_screen.dart';
 import 'package:healthify/screens/main/add_entry/add_exercise/add_exercise_screen.dart';
 import 'package:healthify/screens/main/add_entry/log_water/log_water_screen.dart';
+import 'package:healthify/screens/main/add_entry/add_sleep/add_sleep_screen.dart';
+
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
@@ -37,6 +41,10 @@ final GoRouter appRouter = GoRouter(
       builder: (BuildContext context, GoRouterState state) => const LogWaterScreen(),
     ),
     GoRoute(
+      path: AppRoutes.addSleep,
+      builder: (BuildContext context, GoRouterState state) => const AddSleepScreen(),
+    ),
+    GoRoute(
       path: AppRoutes.main,
       builder: (BuildContext context, GoRouterState state) => const MainLayoutScreen(),
     ),
@@ -47,6 +55,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.featuresIntro,
       builder: (BuildContext context, GoRouterState state) => const FeatureIntroScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.splash,
+      builder: (BuildContext context, GoRouterState state) => const SplashScreen(),
     ),
     GoRoute(
       path: AppRoutes.auth,
@@ -60,7 +72,9 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.success,
       builder: (BuildContext context, GoRouterState state) => OnboardingSuccess(
         onStartJourney: () {
-          context.go(AppRoutes.main);
+          // Log out first (as required by "Login Again" flow)
+          Get.find<AuthController>().logout();
+          context.go(AppRoutes.auth);
         },
       ),
     ),
