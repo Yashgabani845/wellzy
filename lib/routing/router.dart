@@ -22,7 +22,10 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: AppRoutes.addFood,
-      builder: (BuildContext context, GoRouterState state) => const AddFoodScreen(),
+      builder: (BuildContext context, GoRouterState state) {
+        final mealType = state.uri.queryParameters['mealType'];
+        return AddFoodScreen(mealType: mealType);
+      },
     ),
     GoRoute(
       path: AppRoutes.scanBarcode,

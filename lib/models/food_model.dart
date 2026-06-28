@@ -3,26 +3,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FoodItem {
   final String id;
   final String name;
-  final String brand; // e.g. "Generic", "McDonald's"
-  final String category; // e.g. "Fruits", "Grains", "Dairy"
+  final String brand; // e.g. "Generic"
+  final String category;
+  final List<String> aliases;
   final double caloriesPer100g;
   final double proteinPer100g;
   final double carbsPer100g;
   final double fatPer100g;
   final double fiberPer100g;
-  final double defaultServingGrams; // e.g. 1 apple = 182g
+  final double defaultServingGrams;
+  final bool isVegetarian;
+  final bool isJain;
 
   FoodItem({
     required this.id,
     required this.name,
-    required this.brand,
+    this.brand = 'Generic',
     required this.category,
+    this.aliases = const [],
     required this.caloriesPer100g,
     required this.proteinPer100g,
     required this.carbsPer100g,
     required this.fatPer100g,
     this.fiberPer100g = 0,
     this.defaultServingGrams = 100,
+    this.isVegetarian = false,
+    this.isJain = false,
   });
 
   // Calculate macros for any given weight
@@ -32,31 +38,50 @@ class FoodItem {
   double fatFor(double grams) => (fatPer100g / 100) * grams;
 
   factory FoodItem.fromMap(Map<String, dynamic> map, {String? docId}) {
+    // If it's from MongoDB (or matching schema)
+    final nutrition = map['nutrition_per_100g'] as Map<String, dynamic>?;
+    final dietary = map['dietary'] as Map<String, dynamic>?;
+    final servingsList = map['servings'] as List<dynamic>?;
+    double servingGrams = 100.0;
+    if (servingsList != null && servingsList.isNotEmpty) {
+      servingGrams = (servingsList[0]['weight_g'] as num?)?.toDouble() ?? 100.0;
+    }
+
     return FoodItem(
-      id: docId ?? map['id'] ?? '',
+      id: docId ?? map['food_id'] ?? map['id'] ?? '',
       name: map['name'] ?? '',
-      brand: map['brand'] ?? '',
+      brand: map['brand'] ?? 'Generic',
       category: map['category'] ?? '',
-      caloriesPer100g: (map['caloriesPer100g'] as num?)?.toDouble() ?? 0,
-      proteinPer100g: (map['proteinPer100g'] as num?)?.toDouble() ?? 0,
-      carbsPer100g: (map['carbsPer100g'] as num?)?.toDouble() ?? 0,
-      fatPer100g: (map['fatPer100g'] as num?)?.toDouble() ?? 0,
-      fiberPer100g: (map['fiberPer100g'] as num?)?.toDouble() ?? 0,
-      defaultServingGrams: (map['defaultServingGrams'] as num?)?.toDouble() ?? 100,
+      aliases: (map['aliases'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      caloriesPer100g: (nutrition?['calories'] as num?)?.toDouble() ?? (map['caloriesPer100g'] as num?)?.toDouble() ?? 0,
+      proteinPer100g: (nutrition?['protein'] as num?)?.toDouble() ?? (map['proteinPer100g'] as num?)?.toDouble() ?? 0,
+      carbsPer100g: (nutrition?['carbs'] as num?)?.toDouble() ?? (map['carbsPer100g'] as num?)?.toDouble() ?? 0,
+      fatPer100g: (nutrition?['fat'] as num?)?.toDouble() ?? (map['fatPer100g'] as num?)?.toDouble() ?? 0,
+      fiberPer100g: (nutrition?['fiber'] as num?)?.toDouble() ?? (map['fiberPer100g'] as num?)?.toDouble() ?? 0,
+      defaultServingGrams: (map['defaultServingGrams'] as num?)?.toDouble() ?? servingGrams,
+      isVegetarian: dietary?['is_vegetarian'] ?? map['isVegetarian'] ?? false,
+      isJain: dietary?['is_jain'] ?? map['isJain'] ?? false,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'food_id': id,
       'name': name,
       'brand': brand,
       'category': category,
-      'caloriesPer100g': caloriesPer100g,
-      'proteinPer100g': proteinPer100g,
-      'carbsPer100g': carbsPer100g,
-      'fatPer100g': fatPer100g,
-      'fiberPer100g': fiberPer100g,
+      'aliases': aliases,
+      'nutrition_per_100g': {
+        'calories': caloriesPer100g,
+        'protein': proteinPer100g,
+        'carbs': carbsPer100g,
+        'fat': fatPer100g,
+        'fiber': fiberPer100g,
+      },
+      'dietary': {
+        'is_vegetarian': isVegetarian,
+        'is_jain': isJain,
+      },
       'defaultServingGrams': defaultServingGrams,
     };
   }

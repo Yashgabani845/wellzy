@@ -101,7 +101,13 @@ class DashboardService {
 
     final List<FoodLogEntry> todayFoodLogs = [];
     for (final doc in foodLogsSnap.docs) {
-      todayFoodLogs.add(FoodLogEntry.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id));
+      final data = doc.data() as Map<String, dynamic>;
+      print('[DashboardService] Firestore Doc Data: $data');
+      todayFoodLogs.add(FoodLogEntry.fromMap(data, docId: doc.id));
+    }
+
+    for (final log in todayFoodLogs) {
+      print('[DashboardService] Parsed Log: food=${log.food.name}, mealType=${log.mealType}, grams=${log.servingGrams}');
     }
 
     // Organize logs into meals
@@ -148,8 +154,8 @@ class DashboardService {
 
     return [
       _createMealCard('Breakfast', breakfastLogs, breakfastTarget, 'assets/images/meal_breakfast.png'),
-      _createMealCard('Lunch', lunchLogs, lunchTarget, 'assets/images/meal_breakfast.png'), // Reuse image asset safely
-      _createMealCard('Dinner', dinnerLogs, dinnerTarget, 'assets/images/meal_breakfast.png'),
+      _createMealCard('Lunch', lunchLogs, lunchTarget, 'assets/images/meal_lunch.png'),
+      _createMealCard('Dinner', dinnerLogs, dinnerTarget, 'assets/images/meal_dinner.png'),
     ];
   }
 

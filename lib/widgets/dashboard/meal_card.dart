@@ -13,7 +13,7 @@ class MealCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(AppRoutes.addFood),
+      onTap: () => context.push('${AppRoutes.addFood}?mealType=${meal.id}'),
       child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),

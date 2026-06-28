@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:healthify/core/models/daily_summary_model.dart';
 import 'package:healthify/core/utils/current_user.dart';
 import 'package:healthify/models/food_model.dart';
@@ -15,57 +17,138 @@ class FoodService {
   DocumentReference _goalsRef(String uid) =>
       _db.collection('users').doc(uid).collection('goals').doc('info');
 
-  CollectionReference _favouritesRef(String uid) =>
-      _db.collection('users').doc(uid).collection('favourite_foods');
+  mongo.Db? _mongoDb;
+  mongo.DbCollection? _foodsCollection;
 
-  // Predefined food database (fallback / local search database)
-  final List<FoodItem> _foodDatabase = [
-    // Fruits
-    FoodItem(id: 'f1', name: 'Banana', brand: 'Generic', category: 'Fruits', caloriesPer100g: 89, proteinPer100g: 1.1, carbsPer100g: 22.8, fatPer100g: 0.3, fiberPer100g: 2.6, defaultServingGrams: 118),
-    FoodItem(id: 'f2', name: 'Apple', brand: 'Generic', category: 'Fruits', caloriesPer100g: 52, proteinPer100g: 0.3, carbsPer100g: 13.8, fatPer100g: 0.2, fiberPer100g: 2.4, defaultServingGrams: 182),
-    FoodItem(id: 'f3', name: 'Mango', brand: 'Generic', category: 'Fruits', caloriesPer100g: 60, proteinPer100g: 0.8, carbsPer100g: 15.0, fatPer100g: 0.4, fiberPer100g: 1.6, defaultServingGrams: 200),
-    // Grains
-    FoodItem(id: 'g1', name: 'White Rice (Cooked)', brand: 'Generic', category: 'Grains', caloriesPer100g: 130, proteinPer100g: 2.7, carbsPer100g: 28.2, fatPer100g: 0.3, defaultServingGrams: 150),
-    FoodItem(id: 'g2', name: 'Brown Rice (Cooked)', brand: 'Generic', category: 'Grains', caloriesPer100g: 123, proteinPer100g: 2.7, carbsPer100g: 25.6, fatPer100g: 1.0, fiberPer100g: 1.6, defaultServingGrams: 150),
-    FoodItem(id: 'g3', name: 'Oats', brand: 'Generic', category: 'Grains', caloriesPer100g: 389, proteinPer100g: 16.9, carbsPer100g: 66.3, fatPer100g: 6.9, fiberPer100g: 10.6, defaultServingGrams: 40),
-    FoodItem(id: 'g4', name: 'Whole Wheat Bread', brand: 'Generic', category: 'Grains', caloriesPer100g: 247, proteinPer100g: 13.0, carbsPer100g: 41.0, fatPer100g: 3.4, fiberPer100g: 6.0, defaultServingGrams: 28),
-    // Protein
-    FoodItem(id: 'p1', name: 'Chicken Breast (Grilled)', brand: 'Generic', category: 'Protein', caloriesPer100g: 165, proteinPer100g: 31.0, carbsPer100g: 0.0, fatPer100g: 3.6, defaultServingGrams: 120),
-    FoodItem(id: 'p2', name: 'Egg (Boiled)', brand: 'Generic', category: 'Protein', caloriesPer100g: 155, proteinPer100g: 12.6, carbsPer100g: 1.1, fatPer100g: 10.6, defaultServingGrams: 50),
-    FoodItem(id: 'p3', name: 'Paneer', brand: 'Generic', category: 'Protein', caloriesPer100g: 265, proteinPer100g: 18.3, carbsPer100g: 1.2, fatPer100g: 20.8, defaultServingGrams: 100),
-    FoodItem(id: 'p4', name: 'Tofu', brand: 'Generic', category: 'Protein', caloriesPer100g: 76, proteinPer100g: 8.0, carbsPer100g: 1.9, fatPer100g: 4.8, defaultServingGrams: 125),
-    FoodItem(id: 'p5', name: 'Dal (Lentils Cooked)', brand: 'Generic', category: 'Protein', caloriesPer100g: 116, proteinPer100g: 9.0, carbsPer100g: 20.1, fatPer100g: 0.4, fiberPer100g: 7.9, defaultServingGrams: 150),
-    // Dairy
-    FoodItem(id: 'd1', name: 'Milk (Full Cream)', brand: 'Generic', category: 'Dairy', caloriesPer100g: 62, proteinPer100g: 3.2, carbsPer100g: 4.8, fatPer100g: 3.3, defaultServingGrams: 250),
-    FoodItem(id: 'd2', name: 'Greek Yogurt', brand: 'Generic', category: 'Dairy', caloriesPer100g: 59, proteinPer100g: 10.0, carbsPer100g: 3.6, fatPer100g: 0.4, defaultServingGrams: 150),
-    FoodItem(id: 'd3', name: 'Cheddar Cheese', brand: 'Generic', category: 'Dairy', caloriesPer100g: 403, proteinPer100g: 25.0, carbsPer100g: 1.3, fatPer100g: 33.1, defaultServingGrams: 28),
-    // Snacks / Fast Food
-    FoodItem(id: 's1', name: 'Samosa', brand: 'Generic', category: 'Snacks', caloriesPer100g: 262, proteinPer100g: 4.3, carbsPer100g: 28.8, fatPer100g: 14.6, defaultServingGrams: 80),
-    FoodItem(id: 's2', name: 'Almonds', brand: 'Generic', category: 'Snacks', caloriesPer100g: 579, proteinPer100g: 21.2, carbsPer100g: 21.6, fatPer100g: 49.9, fiberPer100g: 12.5, defaultServingGrams: 28),
-    FoodItem(id: 's3', name: 'Dark Chocolate (70%)', brand: 'Generic', category: 'Snacks', caloriesPer100g: 598, proteinPer100g: 7.8, carbsPer100g: 45.9, fatPer100g: 42.6, fiberPer100g: 10.9, defaultServingGrams: 30),
-  ];
-
-  /// Searches for food in the local DB.
-  Future<List<FoodItem>> searchFood(String query) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (query.isEmpty) return [];
-    final lowerQuery = query.toLowerCase();
-    return _foodDatabase
-        .where((f) => f.name.toLowerCase().contains(lowerQuery) || f.category.toLowerCase().contains(lowerQuery))
-        .toList();
+  Future<void> _initMongo() async {
+    if (_mongoDb != null && _mongoDb!.isConnected) return;
+    final uri = dotenv.env['MONGODB_URI'];
+    if (uri == null) throw Exception('MONGODB_URI not found in .env');
+    
+    try {
+      _mongoDb = await mongo.Db.create(uri);
+      await _mongoDb!.open();
+      _foodsCollection = _mongoDb!.collection('foods');
+      print('[FoodService] MongoDB connected successfully to database: ${_mongoDb!.databaseName}');
+    } catch (e) {
+      print('[FoodService] MongoDB connection failed: $e');
+      _mongoDb = null;
+      _foodsCollection = null;
+      rethrow;
+    }
   }
 
-  /// Fetches local database recommendations.
-  Future<List<FoodItem>> fetchRecommendations() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return [
-      _foodDatabase[0],  // Banana
-      _foodDatabase[3],  // White Rice
-      _foodDatabase[7],  // Chicken Breast
-      _foodDatabase[8],  // Egg
-      _foodDatabase[5],  // Oats
-      _foodDatabase[12], // Milk
-    ];
+  /// Searches for food in MongoDB using name, aliases, and search_tokens.
+  Future<List<FoodItem>> searchFood(String query, {bool isVeg = false, bool isJain = false}) async {
+    try {
+      await _initMongo();
+      if (query.isEmpty) return [];
+
+      final escapedQuery = RegExp.escape(query);
+      final regex = {r'$regex': escapedQuery, r'$options': 'i'};
+
+      // Combine $or search with dietary filters using $and
+      final List<Map<String, dynamic>> andConditions = [
+        {
+          r'$or': [
+            {'name': regex},
+            {'aliases': regex},
+            {'search_tokens': regex},
+            {'name_lower': regex},
+          ]
+        },
+      ];
+
+      if (isVeg) {
+        andConditions.add({'dietary.is_vegetarian': true});
+      }
+      if (isJain) {
+        andConditions.add({'dietary.is_jain': true});
+      }
+
+      final filter = <String, dynamic>{
+        r'$and': andConditions,
+      };
+
+      print('[FoodService] Searching: "$query" | veg=$isVeg jain=$isJain | filter=$filter');
+      // Pass map directly to find() — do NOT use where.raw() as it drops $or/$and structure
+      final results = await _foodsCollection!
+          .find(filter)
+          .take(20)
+          .toList();
+      print('[FoodService] Found ${results.length} results');
+      return results.map((map) => FoodItem.fromMap(map)).toList();
+    } catch (e) {
+      print('[FoodService] searchFood error: $e');
+      return [];
+    }
+  }
+
+  /// Fetches default food items from MongoDB based on dietary filters and meal type.
+  Future<List<FoodItem>> fetchRecommendations({
+    bool isVeg = false,
+    bool isJain = false,
+    String mealType = 'breakfast',
+  }) async {
+    try {
+      await _initMongo();
+
+      final List<Map<String, dynamic>> andConditions = [];
+
+      // Dietary filters
+      if (isVeg) {
+        andConditions.add({'dietary.is_vegetarian': true});
+      }
+      if (isJain) {
+        andConditions.add({'dietary.is_jain': true});
+      }
+
+      // Meal-type specific recommendations via tags & categories
+      if (mealType == 'breakfast') {
+        andConditions.add({'tags': 'breakfast'});
+      } else if (mealType == 'lunch') {
+        // Lunch: Rice, Dals, and main breads
+        andConditions.add({
+          r'$or': [
+            {'tags': 'lunch'},
+            {'tags': 'main-course'},
+            {'category': {r'$in': ['Grains & Breads', 'Dals & Legumes']}}
+          ]
+        });
+      } else if (mealType == 'dinner') {
+        // Dinner: Vegetables, healthy curries, and lighter rotis
+        andConditions.add({
+          r'$or': [
+            {'tags': 'dinner'},
+            {'category': 'Vegetables'}
+          ]
+        });
+      } else if (mealType == 'snack') {
+        andConditions.add({
+          r'$or': [
+            {'tags': 'snack'},
+            {'category': 'Snacks'}
+          ]
+        });
+      }
+
+      // Build final filter — empty andConditions means fetch all (no filter)
+      final filter = andConditions.isNotEmpty
+          ? <String, dynamic>{r'$and': andConditions}
+          : <String, dynamic>{};
+
+      print('[FoodService] Recommendations | mealType=$mealType veg=$isVeg jain=$isJain | filter=$filter');
+      // Pass map directly to find() — do NOT use where.raw() as it drops $or/$and structure
+      final results = await _foodsCollection!
+          .find(filter)
+          .take(20)
+          .toList();
+      print('[FoodService] Fetched ${results.length} recommendations');
+      return results.map((map) => FoodItem.fromMap(map)).toList();
+    } catch (e) {
+      print('[FoodService] fetchRecommendations error: $e');
+      return [];
+    }
   }
 
   /// Logs food item to Firestore and updates daily summary atomically.

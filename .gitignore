@@ -1,3 +1,6 @@
+# Environment variables (contains MongoDB credentials)
+.env
+
 # Miscellaneous
 *.class
 *.log

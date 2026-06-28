@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
 import 'package:healthify/controllers/food_controller.dart';
 import 'package:healthify/models/food_model.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
 import 'package:healthify/widgets/common/loading_overlay.dart';
+import 'package:healthify/widgets/common/food_loader.dart';
 
 class AddFoodScreen extends StatefulWidget {
-  const AddFoodScreen({super.key});
+  final String? mealType;
+  const AddFoodScreen({super.key, this.mealType});
 
   @override
   State<AddFoodScreen> createState() => _AddFoodScreenState();
@@ -17,6 +20,15 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   final FoodController _controller = Get.put(FoodController());
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-select the correct meal type tab based on constructor argument
+    if (widget.mealType != null) {
+      _controller.setMealType(widget.mealType!);
+    }
+  }
 
   @override
   void dispose() {
@@ -32,7 +44,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
         if (controller.isLoading) {
           return const Scaffold(
             backgroundColor: AppColors.background,
-            body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            body: Center(child: FoodLoader(label: 'Cooking up results...')),
           );
         }
 
@@ -53,6 +65,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
 
               // ─── Search Bar ─────────────────────────────
               _buildSearchBar(controller),
+              const SizedBox(height: 16),
+
+              // ─── Filters ────────────────────────────────
+              _buildFilters(controller),
               const SizedBox(height: 16),
 
               // ─── Content ────────────────────────────────
@@ -173,9 +189,72 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Filters
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildFilters(FoodController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          _buildFilterChip(
+            label: 'Veg',
+            isActive: controller.isVegOnly,
+            onTap: controller.toggleVeg,
+            activeColor: Colors.green,
+          ),
+          const SizedBox(width: 10),
+          _buildFilterChip(
+            label: 'Jain',
+            isActive: controller.isJainOnly,
+            onTap: controller.toggleJain,
+            activeColor: Colors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required Color activeColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor.withValues(alpha: 0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? activeColor : AppColors.border,
+            width: isActive ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? activeColor : AppColors.textSecondary,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Recommendations (default view)
   // ═══════════════════════════════════════════════════════════════
   Widget _buildRecommendations(FoodController controller) {
+    if (controller.recommendations.isEmpty) {
+      return const Center(
+        child: FoodLoader(label: 'Fetching recommendations...'),
+      );
+    }
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
@@ -203,7 +282,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   // ═══════════════════════════════════════════════════════════════
   Widget _buildSearchResults(FoodController controller) {
     if (controller.isSearching) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: FoodLoader(label: 'Searching database...'),
+      );
     }
 
     if (controller.searchResults.isEmpty) {
@@ -320,6 +401,11 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   void _showFoodDetail(BuildContext context, FoodController controller, FoodItem food) {
     controller.selectFood(food);
 
+    // Create the text controller once when the sheet opens to prevent cursor jump on rebuilds
+    final TextEditingController gramsController = TextEditingController(
+      text: controller.servingGrams.toInt().toString(),
+    );
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -328,6 +414,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
         return GetBuilder<FoodController>(
           builder: (ctrl) {
             return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.85,
               ),
@@ -340,202 +429,202 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
               ),
               child: Stack(
                 children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Drag handle
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Food name + category
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
-                            child: Text(_getCategoryEmoji(food.category), style: const TextStyle(fontSize: 26)),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(food.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
-                              Text(food.brand, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Macro Summary Bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMacroColumn('Calories', '${ctrl.totalCalories.toInt()}', 'kcal', AppColors.primaryDark),
-                          _buildMacroDivider(),
-                          _buildMacroColumn('Protein', ctrl.totalProtein.toStringAsFixed(1), 'g', const Color(0xFFE57373)),
-                          _buildMacroDivider(),
-                          _buildMacroColumn('Carbs', ctrl.totalCarbs.toStringAsFixed(1), 'g', const Color(0xFFFFB74D)),
-                          _buildMacroDivider(),
-                          _buildMacroColumn('Fat', ctrl.totalFat.toStringAsFixed(1), 'g', const Color(0xFF64B5F6)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Serving Size
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                  SafeArea(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text('Serving Size', style: AppTextStyles.subSectionHeading),
+                        // Drag handle
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius: BorderRadius.circular(14),
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Scrollable Content area
+                        Flexible(
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Food name + category
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 52,
+                                      height: 52,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryLight,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Center(
+                                        child: Text(_getCategoryEmoji(food.category), style: const TextStyle(fontSize: 26)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(food.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+                                          Text(food.brand, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: TextField(
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  controller: TextEditingController(text: ctrl.servingGrams.toInt().toString()),
-                                  onChanged: (val) {
-                                    final g = double.tryParse(val);
-                                    if (g != null && g > 0) ctrl.setServingGrams(g);
-                                  },
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    suffixText: 'grams',
-                                    suffixStyle: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                                const SizedBox(height: 24),
+
+                                // Macro Summary Bar
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _buildMacroColumn('Calories', '${ctrl.totalCalories.toInt()}', 'kcal', AppColors.primaryDark),
+                                      _buildMacroDivider(),
+                                      _buildMacroColumn('Protein', ctrl.totalProtein.toStringAsFixed(1), 'g', const Color(0xFFE57373)),
+                                      _buildMacroDivider(),
+                                      _buildMacroColumn('Carbs', ctrl.totalCarbs.toStringAsFixed(1), 'g', const Color(0xFFFFB74D)),
+                                      _buildMacroDivider(),
+                                      _buildMacroColumn('Fat', ctrl.totalFat.toStringAsFixed(1), 'g', const Color(0xFF64B5F6)),
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(height: 24),
+
+                                // Serving Size
+                                const Text('Serving Size', style: AppTextStyles.subSectionHeading),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.background,
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: TextField(
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          controller: gramsController,
+                                          onChanged: (val) {
+                                            final g = double.tryParse(val);
+                                            if (g != null && g > 0) {
+                                              ctrl.setServingGrams(g);
+                                            }
+                                          },
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            suffixText: 'grams',
+                                            suffixStyle: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                                          ),
+                                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // Quick serving chips
+                                Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    _buildServingChip(ctrl, gramsController, '½ serving', food.defaultServingGrams / 2),
+                                    _buildServingChip(ctrl, gramsController, '1 serving', food.defaultServingGrams),
+                                    _buildServingChip(ctrl, gramsController, '1½ serving', food.defaultServingGrams * 1.5),
+                                    _buildServingChip(ctrl, gramsController, '2 servings', food.defaultServingGrams * 2),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Number of Servings
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Number of Servings', style: AppTextStyles.subSectionHeading),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColors.background,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          IconButton(
+                                            onPressed: ctrl.servings > 1 ? () => ctrl.setServings(ctrl.servings - 1) : null,
+                                            icon: const Icon(Icons.remove, size: 18),
+                                            color: AppColors.primaryDark,
+                                          ),
+                                          Text(
+                                            ctrl.servings.toString(),
+                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                                          ),
+                                          IconButton(
+                                            onPressed: () => ctrl.setServings(ctrl.servings + 1),
+                                            icon: const Icon(Icons.add, size: 18),
+                                            color: AppColors.primaryDark,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Add Button (pinned to bottom of modal sheet)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: ctrl.isLogging
+                                  ? null
+                                  : () async {
+                                      await ctrl.logFood();
+                                      if (sheetContext.mounted) {
+                                        Navigator.pop(sheetContext);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('${food.name} added to ${ctrl.selectedMealType}!'),
+                                            backgroundColor: AppColors.primaryDark,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryDark,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'Add to ${_capitalize(ctrl.selectedMealType)} · ${ctrl.totalCalories.toInt()} kcal',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Quick serving chips
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            _buildServingChip(ctrl, '½ serving', food.defaultServingGrams / 2),
-                            _buildServingChip(ctrl, '1 serving', food.defaultServingGrams),
-                            _buildServingChip(ctrl, '1½ serving', food.defaultServingGrams * 1.5),
-                            _buildServingChip(ctrl, '2 servings', food.defaultServingGrams * 2),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Number of Servings
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Number of Servings', style: AppTextStyles.subSectionHeading),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                onPressed: ctrl.servings > 1 ? () => ctrl.setServings(ctrl.servings - 1) : null,
-                                icon: const Icon(Icons.remove, size: 18),
-                                color: AppColors.primaryDark,
-                              ),
-                              Text(
-                                ctrl.servings.toString(),
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                              ),
-                              IconButton(
-                                onPressed: () => ctrl.setServings(ctrl.servings + 1),
-                                icon: const Icon(Icons.add, size: 18),
-                                color: AppColors.primaryDark,
-                              ),
-                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Add Button
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: ctrl.isLogging
-                            ? null
-                            : () async {
-                                await ctrl.logFood();
-                                if (sheetContext.mounted) {
-                                  Navigator.pop(sheetContext);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('${food.name} added to ${ctrl.selectedMealType}!'),
-                                      backgroundColor: AppColors.primaryDark,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryDark,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'Add to ${_capitalize(ctrl.selectedMealType)} · ${ctrl.totalCalories.toInt()} kcal',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
                   if (ctrl.isLogging)
                     Positioned.fill(
                       child: ClipRRect(
@@ -552,7 +641,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           },
         );
       },
-    ).whenComplete(() => controller.clearSelection());
+    ).whenComplete(() {
+      controller.clearSelection();
+    });
   }
 
   Widget _buildMacroColumn(String label, String value, String unit, Color color) {
@@ -573,10 +664,18 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     return Container(width: 1, height: 40, color: AppColors.border);
   }
 
-  Widget _buildServingChip(FoodController ctrl, String label, double grams) {
+  Widget _buildServingChip(
+    FoodController ctrl,
+    TextEditingController gramsController,
+    String label,
+    double grams,
+  ) {
     final isActive = (ctrl.servingGrams - grams).abs() < 1;
     return GestureDetector(
-      onTap: () => ctrl.setServingGrams(grams),
+      onTap: () {
+        ctrl.setServingGrams(grams);
+        gramsController.text = grams.toInt().toString();
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

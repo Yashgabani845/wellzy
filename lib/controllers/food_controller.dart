@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:healthify/models/food_model.dart';
 import 'package:healthify/services/food_service.dart';
@@ -10,6 +11,10 @@ class FoodController extends GetxController {
   bool isSearching = false;
   bool isLogging = false;
 
+  // Filters
+  bool isVegOnly = false;
+  bool isJainOnly = false;
+
   // Data from service
   List<FoodItem> recommendations = [];
   List<FoodItem> searchResults = [];
@@ -21,41 +26,109 @@ class FoodController extends GetxController {
   double servingGrams = 100;
   int servings = 1;
 
+  // Debounce timer — waits 400ms after user stops typing before querying
+  Timer? _debounceTimer;
+
   @override
   void onInit() {
     super.onInit();
-    _loadRecommendations();
+    _loadRecommendations(isInitial: true);
   }
 
-  Future<void> _loadRecommendations() async {
-    isLoading = true;
+  @override
+  void onClose() {
+    _debounceTimer?.cancel();
+    super.onClose();
+  }
+
+  void toggleVeg() {
+    isVegOnly = !isVegOnly;
+    if (!isVegOnly && isJainOnly) {
+      isJainOnly = false;
+    }
+    update();
+    _refreshData();
+  }
+
+  void toggleJain() {
+    isJainOnly = !isJainOnly;
+    if (isJainOnly) {
+      isVegOnly = true;
+    }
+    update();
+    _refreshData();
+  }
+
+  void _refreshData() {
+    if (searchQuery.isNotEmpty) {
+      _executeSearch(searchQuery);
+    } else {
+      _loadRecommendations();
+    }
+  }
+
+  Future<void> _loadRecommendations({bool isInitial = false}) async {
+    if (isInitial) {
+      isLoading = true;
+    } else {
+      isSearching = true;
+    }
     update();
 
     try {
-      recommendations = await _service.fetchRecommendations();
+      recommendations = await _service.fetchRecommendations(
+        isVeg: isVegOnly,
+        isJain: isJainOnly,
+        mealType: selectedMealType,
+      );
     } catch (e) {
+      print("Error loading recommendations: $e");
       recommendations = [];
     } finally {
       isLoading = false;
+      isSearching = false;
       update();
     }
   }
 
-  Future<void> search(String query) async {
+  /// Called on every keystroke — debounces before hitting DB.
+  void search(String query) {
     searchQuery = query;
+
+    // Cancel any pending search
+    _debounceTimer?.cancel();
+
     if (query.isEmpty) {
       searchResults = [];
       isSearching = false;
       update();
+      _loadRecommendations();
       return;
     }
 
+    // Show searching indicator immediately for responsiveness
+    isSearching = true;
+    update();
+
+    // Debounce: wait 400ms after user stops typing
+    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+      _executeSearch(query);
+    });
+  }
+
+  /// Actually hits MongoDB — only called after debounce settles.
+  Future<void> _executeSearch(String query) async {
     isSearching = true;
     update();
 
     try {
-      searchResults = await _service.searchFood(query);
+      searchResults = await _service.searchFood(
+        query,
+        isVeg: isVegOnly,
+        isJain: isJainOnly,
+      );
     } catch (e) {
+      print("Error searching food: $e");
       searchResults = [];
     } finally {
       isSearching = false;
@@ -78,6 +151,7 @@ class FoodController extends GetxController {
   void setMealType(String type) {
     selectedMealType = type;
     update();
+    _refreshData();
   }
 
   void setServingGrams(double grams) {
