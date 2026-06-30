@@ -1,6 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:healthify/core/models/daily_summary_model.dart';
 import 'package:healthify/core/utils/current_user.dart';
 import 'package:healthify/models/food_model.dart';
@@ -17,67 +19,29 @@ class FoodService {
   DocumentReference _goalsRef(String uid) =>
       _db.collection('users').doc(uid).collection('goals').doc('info');
 
-  mongo.Db? _mongoDb;
-  mongo.DbCollection? _foodsCollection;
-
-  Future<void> _initMongo() async {
-    if (_mongoDb != null && _mongoDb!.isConnected) return;
-    final uri = dotenv.env['MONGODB_URI'];
-    if (uri == null) throw Exception('MONGODB_URI not found in .env');
+  String get _baseUrl {
     
-    try {
-      _mongoDb = await mongo.Db.create(uri);
-      await _mongoDb!.open();
-      _foodsCollection = _mongoDb!.collection('foods');
-      print('[FoodService] MongoDB connected successfully to database: ${_mongoDb!.databaseName}');
-    } catch (e) {
-      print('[FoodService] MongoDB connection failed: $e');
-      _mongoDb = null;
-      _foodsCollection = null;
-      rethrow;
-    }
+    const part1 = 'aHR0cHM6Ly9mb29kZGF0YS';
+    const part2 = '1zZXJ2ZXJsZXNzLnZlcmNlbC5hcHA=';
+    return utf8.decode(base64.decode('$part1$part2'));
   }
 
-  /// Searches for food in MongoDB using name, aliases, and search_tokens.
+  /// Searches for food in MongoDB using Vercel serverless backend.
   Future<List<FoodItem>> searchFood(String query, {bool isVeg = false, bool isJain = false}) async {
     try {
-      await _initMongo();
       if (query.isEmpty) return [];
 
-      final escapedQuery = RegExp.escape(query);
-      final regex = {r'$regex': escapedQuery, r'$options': 'i'};
+      final url = Uri.parse('$_baseUrl/api/search?q=${Uri.encodeComponent(query)}&veg=$isVeg&jain=$isJain');
+      print('[FoodService] GET $url');
+      final response = await http.get(url);
 
-      // Combine $or search with dietary filters using $and
-      final List<Map<String, dynamic>> andConditions = [
-        {
-          r'$or': [
-            {'name': regex},
-            {'aliases': regex},
-            {'search_tokens': regex},
-            {'name_lower': regex},
-          ]
-        },
-      ];
-
-      if (isVeg) {
-        andConditions.add({'dietary.is_vegetarian': true});
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((map) => FoodItem.fromMap(map)).toList();
+      } else {
+        print('[FoodService] searchFood failed: status ${response.statusCode}');
+        return [];
       }
-      if (isJain) {
-        andConditions.add({'dietary.is_jain': true});
-      }
-
-      final filter = <String, dynamic>{
-        r'$and': andConditions,
-      };
-
-      print('[FoodService] Searching: "$query" | veg=$isVeg jain=$isJain | filter=$filter');
-      // Pass map directly to find() — do NOT use where.raw() as it drops $or/$and structure
-      final results = await _foodsCollection!
-          .find(filter)
-          .take(20)
-          .toList();
-      print('[FoodService] Found ${results.length} results');
-      return results.map((map) => FoodItem.fromMap(map)).toList();
     } catch (e) {
       print('[FoodService] searchFood error: $e');
       return [];
@@ -91,60 +55,17 @@ class FoodService {
     String mealType = 'breakfast',
   }) async {
     try {
-      await _initMongo();
+      final url = Uri.parse('$_baseUrl/api/recommendations?mealType=$mealType&veg=$isVeg&jain=$isJain');
+      print('[FoodService] GET $url');
+      final response = await http.get(url);
 
-      final List<Map<String, dynamic>> andConditions = [];
-
-      // Dietary filters
-      if (isVeg) {
-        andConditions.add({'dietary.is_vegetarian': true});
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((map) => FoodItem.fromMap(map)).toList();
+      } else {
+        print('[FoodService] fetchRecommendations failed: status ${response.statusCode}');
+        return [];
       }
-      if (isJain) {
-        andConditions.add({'dietary.is_jain': true});
-      }
-
-      // Meal-type specific recommendations via tags & categories
-      if (mealType == 'breakfast') {
-        andConditions.add({'tags': 'breakfast'});
-      } else if (mealType == 'lunch') {
-        // Lunch: Rice, Dals, and main breads
-        andConditions.add({
-          r'$or': [
-            {'tags': 'lunch'},
-            {'tags': 'main-course'},
-            {'category': {r'$in': ['Grains & Breads', 'Dals & Legumes']}}
-          ]
-        });
-      } else if (mealType == 'dinner') {
-        // Dinner: Vegetables, healthy curries, and lighter rotis
-        andConditions.add({
-          r'$or': [
-            {'tags': 'dinner'},
-            {'category': 'Vegetables'}
-          ]
-        });
-      } else if (mealType == 'snack') {
-        andConditions.add({
-          r'$or': [
-            {'tags': 'snack'},
-            {'category': 'Snacks'}
-          ]
-        });
-      }
-
-      // Build final filter — empty andConditions means fetch all (no filter)
-      final filter = andConditions.isNotEmpty
-          ? <String, dynamic>{r'$and': andConditions}
-          : <String, dynamic>{};
-
-      print('[FoodService] Recommendations | mealType=$mealType veg=$isVeg jain=$isJain | filter=$filter');
-      // Pass map directly to find() — do NOT use where.raw() as it drops $or/$and structure
-      final results = await _foodsCollection!
-          .find(filter)
-          .take(20)
-          .toList();
-      print('[FoodService] Fetched ${results.length} recommendations');
-      return results.map((map) => FoodItem.fromMap(map)).toList();
     } catch (e) {
       print('[FoodService] fetchRecommendations error: $e');
       return [];
