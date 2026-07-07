@@ -1,0 +1,13 @@
+- [x] Create MyHealthModel (`lib/models/my_health_model.dart`)
+- [x] Create MyHealthService (`lib/services/my_health_service.dart`)
+- [x] Create MyHealthController (`lib/controllers/my_health_controller.dart`)
+- [x] Modify `RefreshData` (`lib/core/utils/refresh_data.dart`) to register/refresh MyHealthController
+- [x] Create `EditMedicalProfileSheet` (`lib/screens/main/my_health/widgets/edit_medical_profile_sheet.dart`)
+- [x] Create `MyHealthScreen` (`lib/screens/main/my_health/my_health_screen.dart`)
+- [x] Modify `MainLayoutScreen` (`lib/screens/main/main_layout_screen.dart`) to replace Diary with My Health
+- [x] Verify compilation and execution
+- [x] Add `pdf` and `printing` dependencies to `pubspec.yaml`
+- [x] Fix overflow in `NutritionBalanceCard` (`lib/screens/main/my_health/widgets/nutrition_analysis_cards.dart`)
+- [x] Create `MyHealthPdfGenerator` (`lib/screens/main/my_health/utils/my_health_pdf_generator.dart`)
+- [x] Update `MyHealthScreen` (`lib/screens/main/my_health/my_health_screen.dart`) with PDF action button
+- [x] Verify compilation and execution of new features

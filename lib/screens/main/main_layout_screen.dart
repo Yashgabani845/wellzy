@@ -3,7 +3,7 @@ import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/widgets/dashboard/add_entry_bottom_sheet.dart';
 
 import 'dashboard/dashboard_screen.dart';
-import 'diary/diary_screen.dart';
+import 'my_health/my_health_screen.dart';
 import 'progress/progress_screen.dart';
 import 'profile/profile_screen.dart';
 
@@ -19,7 +19,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   final List<Widget> _screens = const [
     DashboardScreen(),
-    DiaryScreen(),
+    MyHealthScreen(),
     ProgressScreen(),
     ProfileScreen(),
   ];
@@ -65,7 +65,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(icon: Icons.dashboard_rounded, label: 'Dashboard', index: 0),
-              _buildNavItem(icon: Icons.book_rounded, label: 'Diary', index: 1),
+              _buildNavItem(icon: Icons.favorite_rounded, label: 'My Health', index: 1),
               const SizedBox(width: 48), // Space for FAB
               _buildNavItem(icon: Icons.bar_chart_rounded, label: 'Progress', index: 2),
               _buildNavItem(icon: Icons.person_rounded, label: 'Profile', index: 3),
