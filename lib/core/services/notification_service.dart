@@ -210,7 +210,7 @@ class NotificationService {
           await _localNotifications.zonedSchedule(
             notificationId,
             'Time to hydrate! 💧',
-            'You are still below your water goal for today. Take a quick sip and log it now!',
+            'Tap to log your water intake.',
             scheduledDate,
             platformDetails,
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -224,7 +224,7 @@ class NotificationService {
           await _localNotifications.zonedSchedule(
             notificationId,
             'Time to hydrate! 💧',
-            'You are still below your water goal for today. Take a quick sip and log it now!',
+            'Tap to log your water intake.',
             scheduledDate,
             platformDetails,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -288,7 +288,7 @@ class NotificationService {
       await scheduleDaily(
         id: 30,
         title: 'Start your day right! 🍳',
-        body: 'It\'s breakfast time. Log your morning meal to keep your calorie target on track.',
+        body: 'Tap to log your breakfast.',
         hour: t.hour,
         minute: t.minute,
         payload: '${AppRoutes.addFood}?mealType=breakfast',
@@ -304,7 +304,7 @@ class NotificationService {
       await scheduleDaily(
         id: 40,
         title: 'Time for Lunch! 🥗',
-        body: 'Fuel your afternoon. Take a break and log your lunch details.',
+        body: 'Tap to log your lunch.',
         hour: t.hour,
         minute: t.minute,
         payload: '${AppRoutes.addFood}?mealType=lunch',
@@ -320,7 +320,7 @@ class NotificationService {
       await scheduleDaily(
         id: 50,
         title: 'Wrap up your day! 🍽️',
-        body: 'Dinner is served! Log your final major meal of the day to evaluate your metrics.',
+        body: 'Tap to log your dinner.',
         hour: t.hour,
         minute: t.minute,
         payload: '${AppRoutes.addFood}?mealType=dinner',
@@ -336,7 +336,7 @@ class NotificationService {
       await scheduleDaily(
         id: 20,
         title: 'Track your progress! ⚖️',
-        body: 'Morning is the best time for consistent readings. Step on the scale and update your weight today!',
+        body: 'Tap to log your weight today.',
         hour: t.hour,
         minute: t.minute,
         payload: AppRoutes.updateWeight,
@@ -352,7 +352,7 @@ class NotificationService {
       await scheduleDaily(
         id: 10,
         title: 'How did you sleep last night? 😴',
-        body: 'Log your sleep duration to analyze your nightly recovery and consistency.',
+        body: 'Tap to log your sleep.',
         hour: t.hour,
         minute: t.minute,
         payload: AppRoutes.addSleep,
