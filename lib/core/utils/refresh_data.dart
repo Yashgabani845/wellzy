@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:healthify/controllers/dashboard_controller.dart';
 import 'package:healthify/controllers/progress_controller.dart';
 import 'package:healthify/controllers/my_health_controller.dart';
+import 'package:healthify/controllers/profile_controller.dart';
 
 class RefreshData {
   static void refreshAll() {
@@ -13,6 +14,9 @@ class RefreshData {
     }
     if (Get.isRegistered<MyHealthController>()) {
       Get.find<MyHealthController>().fetchData();
+    }
+    if (Get.isRegistered<ProfileController>()) {
+      Get.find<ProfileController>().triggerReminderSync();
     }
   }
 }

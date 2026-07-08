@@ -7,6 +7,7 @@ import 'package:healthify/routing/routes.dart';
 import 'package:healthify/controllers/profile_controller.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/theme/app_text_styles.dart';
+import 'notification_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -263,17 +264,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const Text('Notifications', style: AppTextStyles.subSectionHeading),
           const SizedBox(height: 12),
           _buildSettingsGroup([
-            _buildSettingsToggle(
-              icon: Icons.water_drop_outlined,
-              title: 'Water Reminders',
-              value: controller.waterReminders,
-              onChanged: controller.toggleWaterReminders,
-            ),
-            _buildSettingsToggle(
-              icon: Icons.fitness_center_outlined,
-              title: 'Workout Reminders',
-              value: controller.workoutReminders,
-              onChanged: controller.toggleWorkoutReminders,
+            _buildSettingsItem(
+              icon: Icons.notifications_none_rounded,
+              title: 'Reminder Schedule',
+              subtitle: 'Configure daily alarms & intervals',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationSettingsScreen()),
+                );
+              },
             ),
           ]),
           const SizedBox(height: 32),

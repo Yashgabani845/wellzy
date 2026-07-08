@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:healthify/theme/app_colors.dart';
 import 'package:healthify/widgets/dashboard/add_entry_bottom_sheet.dart';
+import 'package:healthify/controllers/profile_controller.dart';
+import 'package:healthify/core/services/notification_service.dart';
 
 import 'dashboard/dashboard_screen.dart';
 import 'my_health/my_health_screen.dart';
@@ -16,6 +19,20 @@ class MainLayoutScreen extends StatefulWidget {
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initReminders();
+  }
+
+  Future<void> _initReminders() async {
+    final ProfileController profileController = Get.put(ProfileController());
+    // Request system permissions for notifications
+    await NotificationService().requestPermissions();
+    // Trigger initial timezone-aware reminder schedules check
+    await profileController.triggerReminderSync();
+  }
 
   final List<Widget> _screens = const [
     DashboardScreen(),

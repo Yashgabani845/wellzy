@@ -1,0 +1,7 @@
+- [x] Add `flutter_local_notifications` and `timezone` dependencies to `pubspec.yaml`
+- [x] Create `NotificationService` (`lib/core/services/notification_service.dart`)
+- [x] Create `NotificationSettingsScreen` (`lib/screens/main/profile/notification_settings_screen.dart`)
+- [x] Modify `ProfileController` (`lib/controllers/profile_controller.dart`) to store settings in Firestore & SharedPreferences
+- [x] Modify `ProfileScreen` (`lib/screens/main/profile/profile_screen.dart`) to link to settings
+- [x] Update `RefreshData` (`lib/core/utils/refresh_data.dart`) to sync reminders on log changes
+- [x] Verify compilation and execution
