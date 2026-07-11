@@ -19,8 +19,15 @@ class FoodService {
   DocumentReference _goalsRef(String uid) =>
       _db.collection('users').doc(uid).collection('goals').doc('info');
 
+  // Toggle this to true to connect to your local backend server
+  static const bool _useLocalBackend = false; 
+  // Note: Use 'http://10.0.2.2:3000' for Android Emulator, or 'http://localhost:3000' for iOS Simulator/Web
+  static const String _localUrl = 'http://192.168.1.36:3000';
+
   String get _baseUrl {
-    
+    if (_useLocalBackend) {
+      return _localUrl;
+    }
     const part1 = 'aHR0cHM6Ly9mb29kZGF0YS';
     const part2 = '1zZXJ2ZXJsZXNzLnZlcmNlbC5hcHA=';
     return utf8.decode(base64.decode('$part1$part2'));
@@ -137,6 +144,29 @@ class FoodService {
 
     await batch.commit();
     return true;
+  }
+
+  String get baseUrl => _baseUrl;
+
+  /// Fetches a food item by barcode from MongoDB backend.
+  Future<FoodItem?> fetchFoodByBarcode(String barcode) async {
+    if (barcode.isEmpty) return null;
+
+    final url = Uri.parse('$_baseUrl/api/food/barcode/$barcode');
+    print('[FoodService] GET $url');
+    
+    // Set a 5-second timeout for quick feedback
+    final response = await http.get(url).timeout(const Duration(seconds: 5));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      final foodData = data.containsKey('food') ? data['food'] : data;
+      return FoodItem.fromMap(foodData as Map<String, dynamic>);
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      throw HttpException('Server returned error status: ${response.statusCode}');
+    }
   }
 
   String _getTodayDateString() {

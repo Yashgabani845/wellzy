@@ -96,7 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 image: DecorationImage(
-                  image: NetworkImage(profile.avatarUrl),
+                  image: profile.avatarUrl.startsWith('http')
+                      ? NetworkImage(profile.avatarUrl)
+                      : AssetImage(profile.avatarUrl) as ImageProvider,
                   fit: BoxFit.cover,
                 ),
                 boxShadow: [

@@ -14,6 +14,7 @@ class FoodItem {
   final double defaultServingGrams;
   final bool isVegetarian;
   final bool isJain;
+  final String? imageUrl;
 
   FoodItem({
     required this.id,
@@ -29,6 +30,7 @@ class FoodItem {
     this.defaultServingGrams = 100,
     this.isVegetarian = false,
     this.isJain = false,
+    this.imageUrl,
   });
 
   // Calculate macros for any given weight
@@ -61,6 +63,7 @@ class FoodItem {
       defaultServingGrams: (map['defaultServingGrams'] as num?)?.toDouble() ?? servingGrams,
       isVegetarian: dietary?['is_vegetarian'] ?? map['isVegetarian'] ?? false,
       isJain: dietary?['is_jain'] ?? map['isJain'] ?? false,
+      imageUrl: map['image_url'] ?? map['imageUrl'],
     );
   }
 
@@ -83,6 +86,7 @@ class FoodItem {
         'is_jain': isJain,
       },
       'defaultServingGrams': defaultServingGrams,
+      'image_url': imageUrl,
     };
   }
 }

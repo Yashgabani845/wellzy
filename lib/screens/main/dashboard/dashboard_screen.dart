@@ -65,7 +65,9 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         CircleAvatar(
                           radius: 28,
-                          backgroundImage: AssetImage(data.userAvatar),
+                          backgroundImage: data.userAvatar.startsWith('http')
+                              ? NetworkImage(data.userAvatar)
+                              : AssetImage(data.userAvatar) as ImageProvider,
                           backgroundColor: AppColors.border,
                         ),
                       ],
