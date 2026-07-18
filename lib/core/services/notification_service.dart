@@ -90,7 +90,8 @@ class NotificationService {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-    if (scheduledDate.isBefore(now)) {
+    // Add a 2-minute buffer to prevent notifications from firing immediately due to execution latency
+    if (scheduledDate.isBefore(now.add(const Duration(minutes: 2)))) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;
@@ -179,65 +180,65 @@ class NotificationService {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     int notificationId = 100;
 
-    for (int hour = startHour; hour <= endHour; hour++) {
-      for (int minute = 0; minute < 60; minute += intervalMinutes) {
-        // Stop if we exceed the endHour
-        if (hour == endHour && minute > 0) break;
+    // Start from startHour:00 and increment by intervalMinutes
+    tz.TZDateTime currentSchedule = tz.TZDateTime(tz.local, now.year, now.month, now.day, startHour, 0);
+    final tz.TZDateTime limitTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, endHour, 0);
 
-        // Schedule daily alarm at this hour/minute
-        tz.TZDateTime scheduledDate =
-            tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-        
-        // If scheduled date is in the past for today, schedule it starting tomorrow
-        if (scheduledDate.isBefore(now)) {
-          scheduledDate = scheduledDate.add(const Duration(days: 1));
-        }
-
-        const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-          'wellzy_reminders_channel',
-          'Reminders',
-          channelDescription: 'Daytime interval reminders to log water intake.',
-          importance: Importance.max,
-          priority: Priority.high,
-        );
-
-        const NotificationDetails platformDetails = NotificationDetails(
-          android: androidDetails,
-          iOS: DarwinNotificationDetails(),
-        );
-
-        try {
-          await _localNotifications.zonedSchedule(
-            notificationId,
-            'Time to hydrate! 💧',
-            'Tap to log your water intake.',
-            scheduledDate,
-            platformDetails,
-            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
-            matchDateTimeComponents: DateTimeComponents.time,
-            payload: AppRoutes.logWater,
-          );
-        } catch (e) {
-          debugPrint("Water exact alarm scheduling failed, falling back to inexact mode: $e");
-          await _localNotifications.zonedSchedule(
-            notificationId,
-            'Time to hydrate! 💧',
-            'Tap to log your water intake.',
-            scheduledDate,
-            platformDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
-            matchDateTimeComponents: DateTimeComponents.time,
-            payload: AppRoutes.logWater,
-          );
-        }
-
-        notificationId++;
-        if (notificationId > 150) break; // Avoid exceeding ID range
+    while (currentSchedule.isBefore(limitTime) || currentSchedule.isAtSameMomentAs(limitTime)) {
+      tz.TZDateTime scheduledDate = currentSchedule;
+      
+      // If scheduled date is in the past or within 2 minutes buffer, schedule it starting tomorrow
+      if (scheduledDate.isBefore(now.add(const Duration(minutes: 2)))) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
+
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'wellzy_reminders_channel',
+        'Reminders',
+        channelDescription: 'Daytime interval reminders to log water intake.',
+        importance: Importance.max,
+        priority: Priority.high,
+      );
+
+      const NotificationDetails platformDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: DarwinNotificationDetails(),
+      );
+
+      try {
+        await _localNotifications.zonedSchedule(
+          notificationId,
+          'Time to hydrate! 💧',
+          'Tap to log your water intake.',
+          scheduledDate,
+          platformDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: AppRoutes.logWater,
+        );
+      } catch (e) {
+        debugPrint("Water exact alarm scheduling failed, falling back to inexact mode: $e");
+        await _localNotifications.zonedSchedule(
+          notificationId,
+          'Time to hydrate! 💧',
+          'Tap to log your water intake.',
+          scheduledDate,
+          platformDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: AppRoutes.logWater,
+        );
+      }
+
+      notificationId++;
+      if (notificationId > 150) break; // Avoid exceeding ID range
+
+      // Increment by intervalMinutes
+      currentSchedule = currentSchedule.add(Duration(minutes: intervalMinutes));
     }
   }
 

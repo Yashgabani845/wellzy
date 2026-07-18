@@ -6,12 +6,14 @@ class AppLogo extends StatelessWidget {
   final double size;
   final bool showText;
   final double fontSize;
+  final String imagePath;
 
   const AppLogo({
     super.key,
     this.size = 80,
     this.showText = true,
     this.fontSize = 28,
+    this.imagePath = 'assets/images/whitebglogo.png',
   });
 
   @override
@@ -20,7 +22,7 @@ class AppLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          'assets/images/logo.png',
+          imagePath,
           width: size,
           height: size,
           fit: BoxFit.contain,

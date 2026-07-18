@@ -188,7 +188,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               children: [
                 ScaleTransition(
                   scale: _scaleAnimation,
-                  child: const AppLogo(size: 100, showText: false),
+                  child: const AppLogo(
+                    size: 135,
+                    showText: false,
+                    imagePath: 'assets/images/transperent.png',
+                  ),
                 ),
                 const SizedBox(height: 24),
                 FadeTransition(
